@@ -1,5 +1,6 @@
 """Fetches video metadata and the mp3 with yt-dlp, and splits the mp3 into chunks with ffmpeg."""
 
+import logging
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -9,7 +10,10 @@ import yt_dlp
 from yt_smart_transcribe.errors import DOWNLOAD, TRANSCRIPTION, StageError
 
 MP3_BITRATE_KBPS = 64
-QUIET = {"quiet": True, "no_warnings": True, "noprogress": True}
+# yt-dlp prints its errors unless it has a logger, and the caller already reports them
+LOGGER = logging.getLogger("yt_dlp")
+LOGGER.addHandler(logging.NullHandler())
+QUIET = {"quiet": True, "no_warnings": True, "noprogress": True, "color": "never", "logger": LOGGER}
 
 
 def fetch_metadata(video: str) -> dict:
@@ -18,7 +22,7 @@ def fetch_metadata(video: str) -> dict:
         with yt_dlp.YoutubeDL(QUIET) as ydl:
             info = ydl.extract_info(video, download=False)
     except yt_dlp.utils.DownloadError as e:
-        raise StageError(DOWNLOAD, "metadata", str(e)) from e
+        raise StageError(DOWNLOAD, "metadata", str(e).removeprefix("ERROR: ")) from e
     if not info.get("duration"):
         raise StageError(DOWNLOAD, "metadata", f"{info['id']} has no duration (live or upcoming?)")
     timestamp = info.get("timestamp")
@@ -48,7 +52,7 @@ def download_mp3(video_id: str, directory: Path) -> Path:
         with yt_dlp.YoutubeDL(options) as ydl:
             ydl.download([f"https://www.youtube.com/watch?v={video_id}"])
     except yt_dlp.utils.DownloadError as e:
-        raise StageError(DOWNLOAD, "download", str(e)) from e
+        raise StageError(DOWNLOAD, "download", str(e).removeprefix("ERROR: ")) from e
     return directory / f"{video_id}.mp3"
 
 

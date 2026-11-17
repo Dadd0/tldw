@@ -1,31 +1,32 @@
-import os
-import base64
-import json
-import requests
-from dotenv import load_dotenv
+"""Command line entry point: runs one command and turns a StageError into the exit code."""
 
-def main():
-    load_dotenv()
+import argparse
+import sys
 
-    with open("audios/audio.mp3", "rb") as f:
-        audio = base64.b64encode(f.read()).decode("utf-8")
-        response = requests.post(
-          url="https://openrouter.ai/api/v1/audio/transcriptions",
-          headers={
-            "Authorization": f"Bearer {os.environ.get("OPENROUTER_API_KEY")}",
-            "Content-Type": "application/json",
-          },
-          data=json.dumps({
-            "model": f"{os.environ.get("TRANSCRIPTION_MODEL_ID")}",
-            "input_audio": {
-              "data": audio,
-              "format": "mp3"
-            }
-          })
-    )
-    result = response.json()
-    print(result["text"])
+from yt_smart_transcribe.config import load_settings
+from yt_smart_transcribe.errors import StageError
+from yt_smart_transcribe.pipeline import process_video
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Store transcripts of YouTube videos in Supabase.")
+    commands = parser.add_subparsers(dest="command", required=True)
+    transcribe = commands.add_parser("transcribe", help="transcribe one video, replacing any stored transcript")
+    transcribe.add_argument("video", help="video ID or URL")
+    args = parser.parse_args()
+
+    try:
+        settings = load_settings()
+    except StageError as e:
+        print(f"FAILED {e.stage}: {e}", file=sys.stderr)
+        return e.code
+    try:
+        process_video(args.video, settings, skip_short=False)
+    except StageError as e:
+        print(f"FAILED {args.video} {e.stage}: {e}", file=sys.stderr)
+        return e.code
+    return 0
+
 
 if __name__ == "__main__":
-    main()
-
+    sys.exit(main())

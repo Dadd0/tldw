@@ -6,21 +6,20 @@ from yt_smart_transcribe.errors import CONFIG, StageError
 ENV = {
     "OPENROUTER_API_KEY": "key",
     "TRANSCRIPTION_MODEL_ID": "model",
-    "SUPABASE_URL": "https://x.supabase.co",
-    "SUPABASE_KEY": "secret",
+    "SUPABASE_DB_URL": "postgresql://user:secret@host:5432/postgres",
 }
 CHANNEL = "UC" + "a" * 22
 
 
 def test_settings_defaults_and_overrides():
-    assert load_settings(ENV) == ENV | {"POLL_INTERVAL_MINUTES": 30, "CHUNK_SECONDS": 600}
+    assert load_settings(ENV) == ENV | {"POLL_INTERVAL_MINUTES": 30, "CHUNK_SECONDS": 3600}
     assert load_settings(ENV | {"CHUNK_SECONDS": "90"})["CHUNK_SECONDS"] == 90
 
 
 @pytest.mark.parametrize(
     "env",
     [
-        {k: v for k, v in ENV.items() if k != "SUPABASE_KEY"},
+        {k: v for k, v in ENV.items() if k != "SUPABASE_DB_URL"},
         ENV | {"OPENROUTER_API_KEY": ""},
         ENV | {"CHUNK_SECONDS": "0"},
         ENV | {"POLL_INTERVAL_MINUTES": "ten"},

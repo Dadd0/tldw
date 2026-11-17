@@ -16,7 +16,8 @@ Two entry points share one pipeline:
 - Python >= 3.14, managed with uv
 - `yt-dlp` (Python library) for metadata and audio download
 - `ffmpeg` on the host, used by yt-dlp for mp3 extraction and by the program for chunking
-- `requests` for the RSS feeds, OpenRouter, and Supabase's REST API (PostgREST). No Supabase client library.
+- `requests` for the RSS feeds and OpenRouter
+- `psycopg` for a direct Postgres connection to Supabase. No Supabase client library.
 - `python-dotenv` for configuration
 - Standard library for the rest: `argparse`, `xml.etree.ElementTree`, `fcntl`, `tempfile`, `subprocess`
 - `pytest` as the only dev dependency
@@ -29,10 +30,9 @@ All settings live in `.env`. A missing or invalid value stops the program at sta
 |---|---|---|
 | `OPENROUTER_API_KEY` | OpenRouter key | required |
 | `TRANSCRIPTION_MODEL_ID` | OpenRouter model used for transcription | required |
-| `SUPABASE_URL` | Project URL | required |
-| `SUPABASE_KEY` | Secret (service role) key | required |
+| `SUPABASE_DB_URL` | Postgres connection string (session pooler) | required |
 | `POLL_INTERVAL_MINUTES` | Minimum time between two polls | 30 |
-| `CHUNK_SECONDS` | Maximum audio length sent in one transcription request | 600 |
+| `CHUNK_SECONDS` | Maximum audio length sent in one transcription request | 3600 |
 
 Fixed in code: channel list path `channels.txt`, minimum video duration 60 seconds, mp3 bitrate 64 kbps.
 
@@ -53,7 +53,7 @@ Crontab on the VPS, written once:
 * * * * * cd /path/to/yt-smart-transcribe && uv run main.py poll >> poll.log 2>&1
 ```
 
-Database setup: paste `schema.sql` into the Supabase SQL editor once.
+Database setup: `psql "$SUPABASE_DB_URL" -f schema.sql`, safe to re-run. See `docs/database.md`.
 
 ## Behavior
 
@@ -126,29 +126,29 @@ Known and accepted:
 `schema.sql`:
 
 ```sql
-create table channels (
-  channel_id     text primary key,
-  tracking_since timestamptz not null,
-  created_at     timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS channels (
+  channel_id     TEXT PRIMARY KEY,
+  tracking_since TIMESTAMPTZ NOT NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-create table videos (
-  video_id         text primary key,
-  channel_id       text not null,
-  title            text not null,
-  published_at     timestamptz,
-  duration_seconds integer not null,
-  status           text not null check (status in ('transcribed', 'skipped')),
-  transcript       text,
-  created_at       timestamptz not null default now(),
-  check ((status = 'transcribed') = (transcript is not null))
+CREATE TABLE IF NOT EXISTS videos (
+  video_id         TEXT PRIMARY KEY,
+  channel_id       TEXT NOT NULL,
+  title            TEXT NOT NULL,
+  published_at     TIMESTAMPTZ,
+  duration_seconds INTEGER NOT NULL,
+  status           TEXT NOT NULL CHECK (status IN ('transcribed', 'skipped')),
+  transcript       TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK ((status = 'transcribed') = (transcript IS NOT NULL))
 );
 
-alter table channels enable row level security;
-alter table videos enable row level security;
+ALTER TABLE channels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
 ```
 
-- Row level security is on with no policies, so only the secret key can read or write.
+- Row level security is on with no policies, so Supabase's public API key cannot read or write the tables. The program connects directly as the table owner, which row level security does not restrict.
 - `videos.channel_id` has no foreign key, because manual videos can come from channels that are not followed.
 - Removing a channel from `channels.txt` stops polling it and leaves its rows. Adding it back resumes from the old `tracking_since`.
 

@@ -1,20 +1,20 @@
-create table channels (
-  channel_id     text primary key,
-  tracking_since timestamptz not null,
-  created_at     timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS channels (
+  channel_id     TEXT PRIMARY KEY,
+  tracking_since TIMESTAMPTZ NOT NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-create table videos (
-  video_id         text primary key,
-  channel_id       text not null,
-  title            text not null,
-  published_at     timestamptz,
-  duration_seconds integer not null,
-  status           text not null check (status in ('transcribed', 'skipped')),
-  transcript       text,
-  created_at       timestamptz not null default now(),
-  check ((status = 'transcribed') = (transcript is not null))
+CREATE TABLE IF NOT EXISTS videos (
+  video_id         TEXT PRIMARY KEY,
+  channel_id       TEXT NOT NULL,
+  title            TEXT NOT NULL,
+  published_at     TIMESTAMPTZ,
+  duration_seconds INTEGER NOT NULL,
+  status           TEXT NOT NULL CHECK (status IN ('transcribed', 'skipped')),
+  transcript       TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK ((status = 'transcribed') = (transcript IS NOT NULL))
 );
 
-alter table channels enable row level security;
-alter table videos enable row level security;
+ALTER TABLE channels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
