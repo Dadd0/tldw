@@ -13,7 +13,7 @@ def test_parse_returns_all_entries_oldest_first():
     assert len(ENTRIES) == 15
     assert ENTRIES[-1] == {
         "video_id": "olpH5z9Aue4",
-        "title": "Considerazioni su GTA6 e sulla PS5 per l’inferenza locale ",
+        "title": "Considerazioni su GTA6 e sulla PS5 per l'inferenza locale ",
         "published": datetime(2026, 11, 16, 18, 23, 57, tzinfo=UTC),
     }
     assert [e["published"] for e in ENTRIES] == sorted(e["published"] for e in ENTRIES)
