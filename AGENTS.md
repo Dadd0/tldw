@@ -29,20 +29,23 @@ Do not build any of these unless the owner asks:
 
 ## Status
 
-Built and working:
+### Built and working
 
-- `transcribe <video>`: fetches metadata, downloads the audio as mp3, splits it into chunks, sends each chunk to OpenRouter, and stores one plain-text transcript per video in Postgres.
-- Loading and validating `.env`, and `channels.txt` with one bare channel ID per line.
+- Loading and validating `.env` and `channels.txt` with one bare channel ID per line.
 - Fetching and parsing a channel's RSS feed, and selecting which entries are new.
-- The `channels` and `videos` tables, in an older shape (see "Database schema").
 - Unit tests for feed parsing, candidate selection, and config parsing.
 
-Not built:
+### Implemented on `feat/transcription-segments`
+
+- `transcribe <video> [--language it]` requests word timestamps and speaker labels, builds segments, and saves the video and its segments in one Postgres transaction.
+- `schema.sql` defines the new database schema. `uv run pytest` passed locally, including the segment tests. The CLI help and invalid-language checks also passed.
+- The full transcription and Supabase write still need a live check.
+
+### Not built
 
 - The `poll` command. `poll.py` holds only a docstring and `main.py` has no `poll` subcommand.
-- Timestamps and speaker labels. The transcription request still asks for plain text rather than `verbose_json` with diarization.
-- The language code in `channels.txt`.
-- Segments, embeddings, essays, the front page, the chat.
+- Per-channel language codes in `channels.txt`.
+- Embeddings, essay generation, the front page, and the chat.
 
 ## Tech stack
 
@@ -372,7 +375,7 @@ ALTER TABLE essays   ENABLE ROW LEVEL SECURITY;
 - There is no vector index. At this size an exact scan is fast and always returns the true nearest segments.
 - The extension lives in Supabase's `extensions` schema. If Postgres reports that the type `vector` does not exist, that schema is not on the connection's search path: write `extensions.vector` in the schema and the queries.
 
-The `videos` table that exists today has an older shape: a `transcript TEXT` column and no `channel_name`. Its rows have no segments and are of no use. Before running `schema.sql`, run `DROP TABLE videos;`. The `channels` table is kept.
+On a fresh Supabase database, apply `schema.sql` directly. If the database still has the older `videos` table with a `transcript TEXT` column and no `channel_name`, confirm that its rows can be discarded before running `DROP TABLE videos;` and applying `schema.sql`. Keep the `channels` table.
 
 ## Project structure
 
@@ -459,7 +462,7 @@ docs: add local setup and commit conventions
 Each step ends with something that can be checked.
 
 1. (Done) Delete the superseded files and reduce `.env` to the four settings. Tests pass and `transcribe` still stores a transcript.
-2. Drop the old `videos` table and apply the new schema. Switch transcription to the request above, add `segments.py` and the one-transaction store. `transcribe <video>` stores segments with speakers and times.
+2. (Implemented, live verification pending) Apply `schema.sql` as described in "Database schema". Run `uv run main.py transcribe <video>` on a short video with two speakers. Check that Supabase has a `transcribed` video row and segments with text, timestamps and speaker labels.
 3. Add `poll` with the lock, and the language code in `channels.txt`.
 4. Add stage 2 and the `write` command. An essay row appears for a transcribed video.
 5. Add stage 3. Segments of 20 words or more have vectors.
