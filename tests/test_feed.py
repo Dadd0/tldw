@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from yt_smart_transcribe.errors import FEED, StageError
-from yt_smart_transcribe.feed import first_tracking_since, parse_feed, select_candidates
+from tldw.errors import FEED, StageError
+from tldw.feed import first_tracking_since, parse_feed, select_candidates
 
 ENTRIES = parse_feed((Path(__file__).parent / "feed.xml").read_text())
 
@@ -50,5 +50,8 @@ def test_first_sight_of_empty_feed_tracks_from_now():
 def test_candidates_are_at_or_after_tracking_since_and_not_stored():
     since = ENTRIES[-3]["published"]
     assert select_candidates(ENTRIES, since, set()) == ENTRIES[-3:]
-    assert select_candidates(ENTRIES, since, {ENTRIES[-2]["video_id"]}) == [ENTRIES[-3], ENTRIES[-1]]
+    assert select_candidates(ENTRIES, since, {ENTRIES[-2]["video_id"]}) == [
+        ENTRIES[-3],
+        ENTRIES[-1],
+    ]
     assert select_candidates(ENTRIES, since, {e["video_id"] for e in ENTRIES}) == []

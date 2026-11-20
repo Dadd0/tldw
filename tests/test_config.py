@@ -1,31 +1,31 @@
 import pytest
 
-from yt_smart_transcribe.config import load_channels, load_settings
-from yt_smart_transcribe.errors import CONFIG, StageError
+from tldw.config import load_channels, load_settings
+from tldw.errors import CONFIG, StageError
 
 ENV = {
     "OPENROUTER_API_KEY": "key",
-    "TRANSCRIPTION_MODEL_ID": "model",
     "SUPABASE_DB_URL": "postgresql://user:secret@host:5432/postgres",
+    "ESSAY_MODEL_ID": "essay-model",
+    "CHAT_MODEL_ID": "chat-model",
 }
 CHANNEL = "UC" + "a" * 22
 
 
-def test_settings_defaults_and_overrides():
-    assert load_settings(ENV) == ENV | {"POLL_INTERVAL_MINUTES": 30, "CHUNK_SECONDS": 3600}
-    assert load_settings(ENV | {"CHUNK_SECONDS": "90"})["CHUNK_SECONDS"] == 90
+def test_settings_loads_required_keys():
+    assert load_settings(ENV | {"UNUSED": "ignored"}) == ENV
 
 
 @pytest.mark.parametrize(
     "env",
     [
         {k: v for k, v in ENV.items() if k != "SUPABASE_DB_URL"},
+        {k: v for k, v in ENV.items() if k != "ESSAY_MODEL_ID"},
+        {k: v for k, v in ENV.items() if k != "CHAT_MODEL_ID"},
         ENV | {"OPENROUTER_API_KEY": ""},
-        ENV | {"CHUNK_SECONDS": "0"},
-        ENV | {"POLL_INTERVAL_MINUTES": "ten"},
     ],
 )
-def test_settings_rejects_missing_or_invalid(env):
+def test_settings_rejects_missing_or_empty(env):
     with pytest.raises(StageError) as e:
         load_settings(env)
     assert e.value.code == CONFIG

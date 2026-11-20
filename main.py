@@ -3,15 +3,19 @@
 import argparse
 import sys
 
-from yt_smart_transcribe.config import load_settings
-from yt_smart_transcribe.errors import StageError
-from yt_smart_transcribe.pipeline import process_video
+from tldw.config import load_settings
+from tldw.errors import StageError
+from tldw.pipeline import process_video
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Store transcripts of YouTube videos in Supabase.")
+    parser = argparse.ArgumentParser(
+        description="Turn YouTube videos into essays and a searchable Q&A."
+    )
     commands = parser.add_subparsers(dest="command", required=True)
-    transcribe = commands.add_parser("transcribe", help="transcribe one video, replacing any stored transcript")
+    transcribe = commands.add_parser(
+        "transcribe", help="transcribe one video, replacing any stored transcript"
+    )
     transcribe.add_argument("video", help="video ID or URL")
     args = parser.parse_args()
 
