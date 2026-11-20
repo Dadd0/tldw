@@ -38,6 +38,9 @@ def fetch_metadata(video: str) -> dict:
     return {
         "video_id": info["id"],
         "channel_id": info["channel_id"],
+        "channel_name": (
+            info.get("channel") or info.get("uploader") or info["channel_id"]
+        ),
         "title": info["title"],
         "duration_seconds": int(info["duration"]),
         "published_at": datetime.fromtimestamp(timestamp, UTC) if timestamp else None,
