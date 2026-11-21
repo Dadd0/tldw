@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS segments (
   speaker       TEXT NOT NULL,
   text          TEXT NOT NULL,
   word_count    INTEGER NOT NULL,
-  embedding     extensions.vector(1536),
+  embedding     extensions.vector(1024),
   PRIMARY KEY (video_id, idx)
 );
 

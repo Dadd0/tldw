@@ -5,12 +5,12 @@ import requests
 from tldw.errors import EMBEDDING, StageError
 
 URL = "https://openrouter.ai/api/v1/embeddings"
-MODEL_ID = "openai/text-embedding-3-small"
+MODEL_ID = "mongodb/voyage-4-lite"
 TIMEOUT_SECONDS = 120
 
 
 def embed(texts: list[str], api_key: str) -> list[list[float]]:
-    """Return one 1536-float vector per text, in input order."""
+    """Return one 1024-float vector per text, in input order."""
     try:
         response = requests.post(
             URL,
