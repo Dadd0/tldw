@@ -1,7 +1,7 @@
 """StageError and the exit code for each pipeline stage."""
 
 CONFIG, FEED, DOWNLOAD, TRANSCRIPTION, DATABASE = 2, 3, 4, 5, 6
-ESSAY = 7
+ESSAY, EMBEDDING = 7, 8
 
 
 class StageError(Exception):
