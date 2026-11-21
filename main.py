@@ -7,6 +7,7 @@ import re
 from tldw.config import load_settings
 from tldw.errors import StageError
 from tldw.pipeline import process_video
+from tldw.poll import run_poll
 
 
 def main() -> int:
@@ -30,12 +31,19 @@ def main() -> int:
         metavar="N",
         help="preview up to N minutes from the start of the video",
     )
+    commands.add_parser("poll", help="transcribe new videos from followed channels")
     args = parser.parse_args()
 
-    if args.language is not None and re.fullmatch(r"[a-z]{2}", args.language) is None:
-        transcribe.error("--language must be a two-letter code (e.g. it)")
-
     try:
+        if args.command == "poll":
+            return run_poll()
+
+        if (
+            args.language is not None
+            and re.fullmatch(r"[a-z]{2}", args.language) is None
+        ):
+            transcribe.error("--language must be a two-letter code (e.g. it)")
+
         settings = load_settings()
     except StageError as e:
         print(f"FAILED {e.stage}: {e}", file=sys.stderr)

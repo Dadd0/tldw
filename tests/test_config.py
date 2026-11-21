@@ -31,17 +31,29 @@ def test_settings_rejects_missing_or_empty(env):
     assert e.value.code == CONFIG
 
 
-def test_channels_skips_comments_blanks_and_duplicates(tmp_path):
+def test_channels_loads_optional_language_in_file_order(tmp_path):
+    other_channel = "UC" + "b" * 22
     path = tmp_path / "channels.txt"
-    path.write_text(f"# followed\n\n{CHANNEL}  # name\n{CHANNEL}\n")
-    assert load_channels(path) == [CHANNEL]
+    path.write_text(
+        f"# followed\n\n{CHANNEL}  # name\n{other_channel} IT\n{CHANNEL} de\n"
+    )
+    assert load_channels(path) == [(CHANNEL, None), (other_channel, "it")]
 
 
-@pytest.mark.parametrize("content", ["not-a-channel\n", CHANNEL + "x\n"])
-def test_channels_rejects_invalid_id(tmp_path, content):
+@pytest.mark.parametrize(
+    "content",
+    [
+        "not-a-channel",
+        CHANNEL + "x",
+        f"{CHANNEL} ita",
+        f"{CHANNEL} 1t",
+        f"{CHANNEL} it extra",
+    ],
+)
+def test_channels_rejects_invalid_line(tmp_path, content):
     path = tmp_path / "channels.txt"
-    path.write_text(content)
-    with pytest.raises(StageError) as e:
+    path.write_text(f"# followed\n{content}\n")
+    with pytest.raises(StageError, match="line 2") as e:
         load_channels(path)
     assert e.value.code == CONFIG
 
