@@ -1,4 +1,4 @@
-"""Reads and writes the channels and videos tables through a direct Postgres connection."""
+"""Reads and writes the channels, videos, segments and essays tables through a direct Postgres connection."""
 
 from datetime import datetime
 
@@ -190,3 +190,59 @@ def save_essay(
         message = str(error).strip().replace(db_url, "[redacted]")
         raise StageError(DATABASE, "database", message) from error
     return True
+
+
+def pending_embedding_video_ids(db_url: str) -> list[str]:
+    """Return the IDs of videos with segments of 20 words or more that have no vector."""
+    rows = query(
+        db_url,
+        """
+        SELECT DISTINCT video_id FROM segments
+        WHERE word_count >= 20 AND embedding IS NULL
+        ORDER BY video_id
+        """,
+    )
+    return [row["video_id"] for row in rows]
+
+
+def segments_to_embed(db_url: str, video_id: str) -> list[dict]:
+    """Return the idx and text of a video's unembedded segments of 20 words or more."""
+    return query(
+        db_url,
+        """
+        SELECT idx, text FROM segments
+        WHERE video_id = %(video_id)s AND word_count >= 20 AND embedding IS NULL
+        ORDER BY idx
+        """,
+        {"video_id": video_id},
+    )
+
+
+def save_embeddings(
+    db_url: str, video_id: str, segments: list[dict], vectors: list[list[float]]
+) -> None:
+    """Store the vectors of a video's segments in one transaction."""
+    rows = [
+        {
+            "video_id": video_id,
+            "idx": segment["idx"],
+            "text": segment["text"],
+            "embedding": "[" + ",".join(map(str, vector)) + "]",
+        }
+        for segment, vector in zip(segments, vectors, strict=True)
+    ]
+    try:
+        with psycopg.connect(
+            db_url, connect_timeout=CONNECT_TIMEOUT_SECONDS
+        ) as connection:
+            # The text check skips segments replaced by a new transcript meanwhile.
+            connection.cursor().executemany(
+                """
+                UPDATE segments SET embedding = %(embedding)s::vector
+                WHERE video_id = %(video_id)s AND idx = %(idx)s AND text = %(text)s
+                """,
+                rows,
+            )
+    except psycopg.Error as error:
+        message = str(error).strip().replace(db_url, "[redacted]")
+        raise StageError(DATABASE, "database", message) from error
