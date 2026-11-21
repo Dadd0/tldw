@@ -24,6 +24,12 @@ def main() -> int:
         metavar="CODE",
         help="two-letter language code (e.g. it)",
     )
+    transcribe.add_argument(
+        "--max-minutes",
+        type=int,
+        metavar="N",
+        help="preview up to N minutes from the start of the video",
+    )
     args = parser.parse_args()
 
     if args.language is not None and re.fullmatch(r"[a-z]{2}", args.language) is None:
@@ -35,7 +41,13 @@ def main() -> int:
         print(f"FAILED {e.stage}: {e}", file=sys.stderr)
         return e.code
     try:
-        process_video(args.video, settings, skip_short=False, language=args.language)
+        process_video(
+            args.video,
+            settings,
+            skip_short=False,
+            language=args.language,
+            max_minutes=args.max_minutes,
+        )
     except StageError as e:
         print(f"FAILED {args.video} {e.stage}: {e}", file=sys.stderr)
         return e.code

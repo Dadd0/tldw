@@ -39,7 +39,8 @@ Do not build any of these unless the owner asks:
 
 - `transcribe <video> [--language it]` requests word timestamps and speaker labels, builds segments, and saves the video and its segments in one Postgres transaction.
 - `schema.sql` defines the new database schema. `uv run pytest` passed locally, including the segment tests. The CLI help and invalid-language checks also passed.
-- The full transcription and Supabase write still need a live check.
+- Live verification passed with [Apollo 11: Landing on the Moon](https://www.youtube.com/watch?v=nOcDftgR5UQ). Supabase stored the video as `transcribed` with 11 timestamped segments and speaker labels.
+- `transcribe <video> --max-minutes N` analyzes up to the first N minutes and prints the segments in the terminal as an unsaved preview.
 
 ### Not built
 
@@ -462,7 +463,7 @@ docs: add local setup and commit conventions
 Each step ends with something that can be checked.
 
 1. (Done) Delete the superseded files and reduce `.env` to the four settings. Tests pass and `transcribe` still stores a transcript.
-2. (Implemented, live verification pending) Apply `schema.sql` as described in "Database schema". Run `uv run main.py transcribe <video>` on a short video with two speakers. Check that Supabase has a `transcribed` video row and segments with text, timestamps and speaker labels.
+2. (Done) Apply `schema.sql` as described in "Database schema". Run `uv run main.py transcribe <video>` on a short video with two speakers. Check that Supabase has a `transcribed` video row and segments with text, timestamps and speaker labels.
 3. Add `poll` with the lock, and the language code in `channels.txt`.
 4. Add stage 2 and the `write` command. An essay row appears for a transcribed video.
 5. Add stage 3. Segments of 20 words or more have vectors.
