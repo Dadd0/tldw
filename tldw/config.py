@@ -25,21 +25,41 @@ def load_settings(env: Mapping[str, str] | None = None) -> dict[str, str]:
     return {name: env[name] for name in REQUIRED}
 
 
-def load_channels(path: Path = CHANNELS_FILE) -> list[str]:
-    """Return the channel IDs in the file, without duplicates, in file order."""
+def load_channels(path: Path = CHANNELS_FILE) -> list[tuple[str, str | None]]:
+    """Return (channel ID, language) pairs in file order, keeping the first occurrence."""
     try:
         lines = path.read_text().splitlines()
     except OSError as e:
         raise StageError(CONFIG, "config", f"cannot read {path}: {e}") from e
-    channels = []
+
+    channels: dict[str, str | None] = {}
     for number, line in enumerate(lines, 1):
-        channel = line.split("#")[0].strip()
-        if not channel:
+        fields = line.split("#", 1)[0].split()
+        if not fields:
             continue
-        if not CHANNEL_ID.fullmatch(channel):
+        if len(fields) > 2:
             raise StageError(
-                CONFIG, "config", f"{path} line {number}: not a channel ID: {channel!r}"
+                CONFIG,
+                "config",
+                f"{path} line {number}: expected an ID and optional language",
             )
-        if channel not in channels:
-            channels.append(channel)
-    return channels
+
+        channel_id = fields[0]
+        if not CHANNEL_ID.fullmatch(channel_id):
+            raise StageError(
+                CONFIG,
+                "config",
+                f"{path} line {number}: not a channel ID: {channel_id!r}",
+            )
+
+        language = fields[1].lower() if len(fields) == 2 else None
+        if language is not None and re.fullmatch(r"[a-z]{2}", language) is None:
+            raise StageError(
+                CONFIG,
+                "config",
+                f"{path} line {number}: expected a two-letter language code",
+            )
+
+        channels.setdefault(channel_id, language)
+
+    return list(channels.items())

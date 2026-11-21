@@ -31,21 +31,18 @@ Do not build any of these unless the owner asks:
 
 ### Built and working
 
-- Loading and validating `.env` and `channels.txt` with one bare channel ID per line.
+- Loading and validating `.env` and `channels.txt`, including optional two-letter language codes per channel.
 - Fetching and parsing a channel's RSS feed, and selecting which entries are new.
 - Unit tests for feed parsing, candidate selection, and config parsing.
-
-### Implemented on `feat/transcription-segments`
-
 - `transcribe <video> [--language it]` requests word timestamps and speaker labels, builds segments, and saves the video and its segments in one Postgres transaction.
 - `schema.sql` defines the new database schema. `uv run pytest` passed locally, including the segment tests. The CLI help and invalid-language checks also passed.
 - Live verification passed with [Apollo 11: Landing on the Moon](https://www.youtube.com/watch?v=nOcDftgR5UQ). Supabase stored the video as `transcribed` with 11 timestamped segments and speaker labels.
 - `transcribe <video> --max-minutes N` analyzes up to the first N minutes and prints the segments in the terminal as an unsaved preview.
+- `poll` uses a non-blocking file lock on Linux and WSL. Live checks confirmed that a video under three minutes was stored as `skipped`, an eligible video was transcribed with stored segments, and a second poll skipped the stored video.
+- `uv run pytest` passed on WSL, including the poll lock test.
 
 ### Not built
 
-- The `poll` command. `poll.py` holds only a docstring and `main.py` has no `poll` subcommand.
-- Per-channel language codes in `channels.txt`.
 - Embeddings, essay generation, the front page, and the chat.
 
 ## Tech stack
@@ -424,9 +421,15 @@ Plain functions with type hints and a one-line docstring. Rows are plain dicts k
 Each module that wraps an external system catches that system's own errors and raises `StageError`. `StageError` is caught in only two places: around each video and each channel in `poll.py`, so the poll continues, and at the top of `main.py`, to set the exit code.
 
 ```python
-def select_candidates(entries: list[dict], tracking_since: datetime, stored_ids: set[str]) -> list[dict]:
+def select_candidates(
+    entries: list[dict], tracking_since: datetime, stored_ids: set[str]
+) -> list[dict]:
     """Return the entries published at or after tracking_since that are not stored yet, oldest first."""
-    return [e for e in entries if e["published"] >= tracking_since and e["video_id"] not in stored_ids]
+    return [
+        e
+        for e in entries
+        if e["published"] >= tracking_since and e["video_id"] not in stored_ids
+    ]
 ```
 
 A shortcut with a known limit gets a comment in this form: `# shortcut: <the limit>, <when to upgrade>`.
@@ -464,7 +467,7 @@ Each step ends with something that can be checked.
 
 1. (Done) Delete the superseded files and reduce `.env` to the four settings. Tests pass and `transcribe` still stores a transcript.
 2. (Done) Apply `schema.sql` as described in "Database schema". Run `uv run main.py transcribe <video>` on a short video with two speakers. Check that Supabase has a `transcribed` video row and segments with text, timestamps and speaker labels.
-3. Add `poll` with the lock, and the language code in `channels.txt`.
+3. (Done) Add `poll` with the lock, and the language code in `channels.txt`.
 4. Add stage 2 and the `write` command. An essay row appears for a transcribed video.
 5. Add stage 3. Segments of 20 words or more have vectors.
 6. Add the front page.
