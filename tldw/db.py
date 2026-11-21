@@ -61,20 +61,55 @@ def get_video(db_url: str, video_id: str) -> dict | None:
     return rows[0] if rows else None
 
 
-def upsert_video(db_url: str, video: dict) -> None:
-    """Store the video row, replacing any existing row with the same video ID."""
-    query(
-        db_url,
-        """
-        INSERT INTO videos (video_id, channel_id, title, published_at, duration_seconds, status, transcript)
-        VALUES (%(video_id)s, %(channel_id)s, %(title)s, %(published_at)s, %(duration_seconds)s, %(status)s, %(transcript)s)
-        ON CONFLICT (video_id) DO UPDATE SET
-          channel_id = EXCLUDED.channel_id,
-          title = EXCLUDED.title,
-          published_at = EXCLUDED.published_at,
-          duration_seconds = EXCLUDED.duration_seconds,
-          status = EXCLUDED.status,
-          transcript = EXCLUDED.transcript
-        """,
-        video,
-    )
+def upsert_video(db_url: str, video: dict, segments: list[dict]) -> None:
+    """Store a video and replace its transcript and essay in one transaction."""
+    try:
+        with psycopg.connect(
+            db_url, connect_timeout=CONNECT_TIMEOUT_SECONDS
+        ) as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO videos (
+                    video_id, channel_id, channel_name, title,
+                    published_at, duration_seconds, status
+                )
+                VALUES (
+                    %(video_id)s, %(channel_id)s, %(channel_name)s, %(title)s,
+                    %(published_at)s, %(duration_seconds)s, %(status)s
+                )
+                ON CONFLICT (video_id) DO UPDATE SET
+                    channel_id = EXCLUDED.channel_id,
+                    channel_name = EXCLUDED.channel_name,
+                    title = EXCLUDED.title,
+                    published_at = EXCLUDED.published_at,
+                    duration_seconds = EXCLUDED.duration_seconds,
+                    status = EXCLUDED.status
+                WHERE EXCLUDED.status = 'transcribed'
+                """,
+                video,
+            )
+            if video["status"] == "skipped":
+                return
+
+            video_key = {"video_id": video["video_id"]}
+            cursor.execute(
+                "DELETE FROM segments WHERE video_id = %(video_id)s", video_key
+            )
+            cursor.executemany(
+                """
+                INSERT INTO segments (
+                    video_id, idx, start_seconds, end_seconds, speaker, text, word_count
+                )
+                VALUES (
+                    %(video_id)s, %(idx)s, %(start_seconds)s, %(end_seconds)s,
+                    %(speaker)s, %(text)s, %(word_count)s
+                )
+                """,
+                (segment | video_key for segment in segments),
+            )
+            cursor.execute(
+                "DELETE FROM essays WHERE video_id = %(video_id)s", video_key
+            )
+    except psycopg.Error as e:
+        message = str(e).strip().replace(db_url, "[redacted]")
+        raise StageError(DATABASE, "database", message) from e

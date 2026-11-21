@@ -38,6 +38,9 @@ def fetch_metadata(video: str) -> dict:
     return {
         "video_id": info["id"],
         "channel_id": info["channel_id"],
+        "channel_name": (
+            info.get("channel") or info.get("uploader") or info["channel_id"]
+        ),
         "title": info["title"],
         "duration_seconds": int(info["duration"]),
         "published_at": datetime.fromtimestamp(timestamp, UTC) if timestamp else None,
@@ -65,9 +68,19 @@ def download_mp3(video_id: str, directory: Path) -> Path:
     return directory / f"{video_id}.mp3"
 
 
-def split_mp3(mp3: Path) -> list[Path]:
-    """Split the mp3 into chunks of at most CHUNK_SECONDS, next to it, and return them in order."""
+def split_mp3(mp3: Path, *, max_seconds: int | None = None) -> list[Path]:
+    """Split the start of the audio into chunks, up to the optional time limit."""
     # shortcut: cuts at fixed times so a word can be split across chunks, switch to silence detection if transcripts show it
+    audio_options = ["-c", "copy"]
+    if max_seconds is not None:
+        audio_options = [
+            "-af",
+            f"atrim=duration={max_seconds}",
+            "-c:a",
+            "libmp3lame",
+            "-b:a",
+            f"{MP3_BITRATE_KBPS}k",
+        ]
     result = subprocess.run(
         [
             "ffmpeg",
@@ -80,8 +93,7 @@ def split_mp3(mp3: Path) -> list[Path]:
             "segment",
             "-segment_time",
             str(CHUNK_SECONDS),
-            "-c",
-            "copy",
+            *audio_options,
             str(mp3.with_name(f"{mp3.stem}_%04d.mp3")),
         ],
         capture_output=True,
@@ -94,4 +106,8 @@ def split_mp3(mp3: Path) -> list[Path]:
             "chunking",
             result.stderr.strip() or "ffmpeg produced no chunks",
         )
+    if max_seconds is not None:
+        max_chunks = (max_seconds + CHUNK_SECONDS - 1) // CHUNK_SECONDS
+        chunks = chunks[:max_chunks]
+
     return chunks
