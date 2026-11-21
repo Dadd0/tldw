@@ -4,10 +4,15 @@ import sys
 from pathlib import Path
 
 from tldw.config import load_channels, load_settings
-from tldw.db import get_tracking_since, insert_channel, stored_video_ids
+from tldw.db import (
+    get_tracking_since,
+    insert_channel,
+    stored_video_ids,
+    pending_essay_video_ids,
+)
 from tldw.errors import CONFIG, StageError
 from tldw.feed import fetch_feed, first_tracking_since, select_candidates
-from tldw.pipeline import process_video
+from tldw.pipeline import transcribe_video, write_essay
 
 LOCK_FILE = Path(".poll.lock")
 
@@ -70,11 +75,22 @@ def poll_channels(
         for entry in candidates:
             video_id = entry["video_id"]
             try:
-                process_video(video_id, settings, skip_short=True, language=language)
+                transcribe_video(video_id, settings, skip_short=True, language=language)
             except StageError as error:
                 _log_failure(video_id, error, settings)
                 exit_code = exit_code or error.code
+    try:
+        pending_ids = pending_essay_video_ids(db_url)
+    except StageError as error:
+        _log_failure("poll", error, settings)
+        return exit_code or error.code
 
+    for video_id in pending_ids:
+        try:
+            write_essay(video_id, settings, replace=False)
+        except StageError as error:
+            _log_failure(video_id, error, settings)
+            exit_code = exit_code or error.code
     return exit_code
 
 
@@ -83,4 +99,5 @@ def _log_failure(item_id: str, error: StageError, settings: dict[str, str]) -> N
     message = str(error)
     for name in ("SUPABASE_DB_URL", "OPENROUTER_API_KEY"):
         message = message.replace(settings[name], "[redacted]")
+    message = " ".join(message.splitlines())
     print(f"FAILED {item_id} {error.stage}: {message}", file=sys.stderr)

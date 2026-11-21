@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from tldw.errors import CONFIG, StageError
 
 CHANNELS_FILE = Path("channels.txt")
+STYLE_FILE = Path("style.md")
 REQUIRED = ("OPENROUTER_API_KEY", "SUPABASE_DB_URL", "ESSAY_MODEL_ID", "CHAT_MODEL_ID")
 CHANNEL_ID = re.compile(r"UC[A-Za-z0-9_-]{22}")
 
@@ -63,3 +64,11 @@ def load_channels(path: Path = CHANNELS_FILE) -> list[tuple[str, str | None]]:
         channels.setdefault(channel_id, language)
 
     return list(channels.items())
+
+
+def load_style(path: Path = STYLE_FILE) -> str:
+    """Read the essay style instructions."""
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeError) as error:
+        raise StageError(CONFIG, "config", f"cannot read {path}: {error}") from error

@@ -9,6 +9,14 @@ from tldw.errors import DATABASE, StageError
 
 CONNECT_TIMEOUT_SECONDS = 10
 
+ESSAY_SOURCE_SQL = """
+    SELECT v.title, v.channel_name, s.idx, s.start_seconds, s.speaker, s.text
+    FROM videos AS v
+    LEFT JOIN segments AS s ON s.video_id = v.video_id
+    WHERE v.video_id = %(video_id)s AND v.status = 'transcribed'
+    ORDER BY s.idx
+"""
+
 
 def query(db_url: str, sql: str, params: dict | None = None) -> list[dict]:
     """Run one statement in its own connection and return its rows, keyed by column name."""
@@ -113,3 +121,72 @@ def upsert_video(db_url: str, video: dict, segments: list[dict]) -> None:
     except psycopg.Error as e:
         message = str(e).strip().replace(db_url, "[redacted]")
         raise StageError(DATABASE, "database", message) from e
+
+
+def get_essay_source(db_url: str, video_id: str) -> list[dict]:
+    """Read a transcribed video's metadata and segments in transcript order."""
+    return query(db_url, ESSAY_SOURCE_SQL, {"video_id": video_id})
+
+
+def pending_essay_video_ids(db_url: str) -> list[str]:
+    """Return the IDs of transcribed videos that still need an essay."""
+    rows = query(
+        db_url,
+        """
+        SELECT v.video_id
+        FROM videos AS v
+        WHERE v.status = 'transcribed'
+          AND NOT EXISTS (
+              SELECT 1 FROM essays AS e WHERE e.video_id = v.video_id
+          )
+        ORDER BY v.video_id
+        """,
+    )
+    return [row["video_id"] for row in rows]
+
+
+def save_essay(
+    db_url: str,
+    video_id: str,
+    source: list[dict],
+    title: str,
+    body: str,
+    *,
+    replace: bool,
+) -> bool:
+    """Save the essay if its source still matches the stored transcript."""
+    video_key = {"video_id": video_id}
+    try:
+        with psycopg.connect(
+            db_url, connect_timeout=CONNECT_TIMEOUT_SECONDS, row_factory=dict_row
+        ) as connection:
+            video = connection.execute(
+                """
+                SELECT 1 FROM videos
+                WHERE video_id = %(video_id)s
+                FOR NO KEY UPDATE
+                """,
+                video_key,
+            ).fetchone()
+            if video is None:
+                return False
+
+            current_source = connection.execute(ESSAY_SOURCE_SQL, video_key).fetchall()
+            if current_source != source:
+                return False
+
+            connection.execute(
+                """
+                INSERT INTO essays (video_id, title, body)
+                VALUES (%(video_id)s, %(title)s, %(body)s)
+                ON CONFLICT (video_id) DO UPDATE SET
+                    title = EXCLUDED.title,
+                    body = EXCLUDED.body
+                WHERE %(replace)s
+                """,
+                video_key | {"title": title, "body": body, "replace": replace},
+            )
+    except psycopg.Error as error:
+        message = str(error).strip().replace(db_url, "[redacted]")
+        raise StageError(DATABASE, "database", message) from error
+    return True
