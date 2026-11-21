@@ -40,10 +40,12 @@ Do not build any of these unless the owner asks:
 - `transcribe <video> --max-minutes N` analyzes up to the first N minutes and prints the segments in the terminal as an unsaved preview.
 - `poll` uses a non-blocking file lock on Linux and WSL. Live checks confirmed that a video under three minutes was stored as `skipped`, an eligible video was transcribed with stored segments, and a second poll skipped the stored video.
 - `uv run pytest` passed on WSL, including the poll lock test.
+- `write <video-id>` writes or replaces an essay using `style.md`. A live run for Apollo 11 saved an essay in Supabase.
+- `transcribe` writes the essay after saving the transcript. After scanning the feeds, `poll` writes essays for stored transcripts that still need one.
 
 ### Not built
 
-- Embeddings, essay generation, the front page, and the chat.
+- Embeddings, the front page, and the chat.
 
 ## Tech stack
 
@@ -468,7 +470,7 @@ Each step ends with something that can be checked.
 1. (Done) Delete the superseded files and reduce `.env` to the four settings. Tests pass and `transcribe` still stores a transcript.
 2. (Done) Apply `schema.sql` as described in "Database schema". Run `uv run main.py transcribe <video>` on a short video with two speakers. Check that Supabase has a `transcribed` video row and segments with text, timestamps and speaker labels.
 3. (Done) Add `poll` with the lock, and the language code in `channels.txt`.
-4. Add stage 2 and the `write` command. An essay row appears for a transcribed video.
+4. (Done) Add stage 2 and the `write` command. An essay row appears for a transcribed video.
 5. Add stage 3. Segments of 20 words or more have vectors.
 6. Add the front page.
 7. Add the chat. A question about a transcribed video returns an answer with both links.
@@ -491,7 +493,7 @@ From documentation, not measured here:
 
 - OpenRouter: providers time out after 60 seconds of processing per transcription request. This and the 17-second measurement are why chunks are 300 seconds.
 - OpenRouter: outside OpenAI and Groq models, a transcription request is limited to 25 MB of audio, about 52 minutes at 64 kbps.
-- PydanticAI: the four `to_web()` facts in "Chat", `OpenRouterModel` and `OpenRouterProvider`. No PydanticAI code has been run for this project yet.
+- PydanticAI: the four `to_web()` facts in "Chat".
 - Supabase: whether the `extensions` schema is on the connection's search path has not been checked.
 
 ## Boundaries
