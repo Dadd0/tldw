@@ -42,10 +42,11 @@ Do not build any of these unless the owner asks:
 - `uv run pytest` passed on WSL, including the poll lock test.
 - `write <video-id>` writes or replaces an essay using `style.md`. A live run for Apollo 11 saved an essay in Supabase.
 - `transcribe` writes the essay after saving the transcript. After scanning the feeds, `poll` writes essays for stored transcripts that still need one.
+- Stage 3 embeds segments of 20 words or more: `transcribe` runs it after the essay, and `poll` runs it for every video with unembedded segments. A live run with `mongodb/voyage-4-lite` stored 1024-dimension vectors for all 9 eligible segments, and a cosine search for "astronauts landing on the moon" returned the Apollo 11 landing segment first. That run called `embed_video` directly. The stage 3 path through `poll` and `transcribe` has not been run live yet: confirm it on the next real poll that has new segments.
 
 ### Not built
 
-- Embeddings, the front page, and the chat.
+- The front page and the chat.
 
 ## Tech stack
 
@@ -77,7 +78,7 @@ Fixed in code, each as a constant in the one module that uses it:
 | Constant | Value | Module |
 |---|---|---|
 | Transcription model | `x-ai/grok-stt-2.0` | `transcription.py` |
-| Embedding model | `openai/text-embedding-3-small` (1536 dimensions) | `embedding.py` |
+| Embedding model | `mongodb/voyage-4-lite` (1024 dimensions) | `embedding.py` |
 | Audio chunk length | 300 seconds | `audio.py` |
 | mp3 bitrate | 64 kbps | `audio.py` |
 | Minimum video duration when polling | 180 seconds | `pipeline.py` |
@@ -247,10 +248,10 @@ For one video, take its segments of 20 words or more that have no embedding, in 
 Request to `POST https://openrouter.ai/api/v1/embeddings`:
 
 ```json
-{"model": "openai/text-embedding-3-small", "input": ["text of segment 0", "text of segment 1"]}
+{"model": "mongodb/voyage-4-lite", "input": ["text of segment 0", "text of segment 1"]}
 ```
 
-The response has a `data` array of `{"index": 0, "embedding": [1536 floats]}`. Match each vector to its input by `index`. A non-200 response, or a `data` array whose length differs from the input's, fails the video.
+The response has a `data` array of `{"index": 0, "embedding": [1024 floats]}`. Match each vector to its input by `index`. A non-200 response, or a `data` array whose length differs from the input's, fails the video.
 
 `embedding.py` exposes one function that takes a list of texts and returns a list of vectors. The chat's search calls the same function with one text.
 
@@ -351,7 +352,7 @@ CREATE TABLE IF NOT EXISTS segments (
   speaker       TEXT NOT NULL,
   text          TEXT NOT NULL,
   word_count    INTEGER NOT NULL,
-  embedding     vector(1536),
+  embedding     vector(1024),
   PRIMARY KEY (video_id, idx)
 );
 
@@ -376,6 +377,8 @@ ALTER TABLE essays   ENABLE ROW LEVEL SECURITY;
 - The extension lives in Supabase's `extensions` schema. If Postgres reports that the type `vector` does not exist, that schema is not on the connection's search path: write `extensions.vector` in the schema and the queries.
 
 On a fresh Supabase database, apply `schema.sql` directly. If the database still has the older `videos` table with a `transcript TEXT` column and no `channel_name`, confirm that its rows can be discarded before running `DROP TABLE videos;` and applying `schema.sql`. Keep the `channels` table.
+
+If `segments.embedding` is still `vector(1536)` (from the earlier `openai/text-embedding-3-small` model), re-running `schema.sql` does not change it. Run `ALTER TABLE segments ALTER COLUMN embedding TYPE vector(1024) USING NULL;` once: it clears the old vectors, and the next poll embeds the segments again. The shared Supabase database was converted on 2026-11-21.
 
 ## Project structure
 
@@ -471,7 +474,7 @@ Each step ends with something that can be checked.
 2. (Done) Apply `schema.sql` as described in "Database schema". Run `uv run main.py transcribe <video>` on a short video with two speakers. Check that Supabase has a `transcribed` video row and segments with text, timestamps and speaker labels.
 3. (Done) Add `poll` with the lock, and the language code in `channels.txt`.
 4. (Done) Add stage 2 and the `write` command. An essay row appears for a transcribed video.
-5. Add stage 3. Segments of 20 words or more have vectors.
+5. (Done) Add stage 3. Segments of 20 words or more have vectors.
 6. Add the front page.
 7. Add the chat. A question about a transcribed video returns an answer with both links.
 
@@ -485,16 +488,16 @@ Measured on 2026-11-20 through OpenRouter. Re-check before relying on them much 
 - On a 5-minute Italian conversation with people talking over each other, it found the two speakers and placed most turn boundaries within a word or two, but on one unclear stretch it repeated a phrase and then produced 40 words in Hebrew script. Sending `language: "it"` removed the Hebrew; that stretch was still unreliable.
 - `google/gemini-3.5-transcribe` was rejected. It labelled all words with speakers on one call and a quarter of them on an identical repeat, dropped the last 20 to 28 seconds, and costs about $0.27 per hour.
 - `openai/whisper-large-v3-turbo` cannot return speakers.
-- The embeddings request shown above returns HTTP 200 with one 1536-float vector per input, each carrying its `index`.
+- `mongodb/voyage-4-lite` (checked 2026-11-21): the embeddings request shown above returns HTTP 200 with one 1024-float vector per input, each carrying its `index`. It costs $0.02 per million tokens, the same as `openai/text-embedding-3-small`, and accepts 32,000 tokens per input. A `dimensions` field accepts only 256, 512, 1024 or 2048; 1536 is rejected with HTTP 400.
 - `yt-dlp` 2026.10.26 downloaded the test video on three later attempts after one `HTTP Error 403`, with no extra components and no Deno installed (Node and Bun were present). If downloads fail consistently on the VPS, check whether yt-dlp there needs a JavaScript runtime.
 - `MarkdownIt()` with no arguments renders a `<script>` tag in its input unchanged. `MarkdownIt("commonmark", {"html": False})` escapes it.
+- On the project's Supabase (checked 2026-11-21) the search path is `"$user", public, extensions`, so `'[1,2,3]'::vector` works without the `extensions.` prefix.
 
 From documentation, not measured here:
 
 - OpenRouter: providers time out after 60 seconds of processing per transcription request. This and the 17-second measurement are why chunks are 300 seconds.
 - OpenRouter: outside OpenAI and Groq models, a transcription request is limited to 25 MB of audio, about 52 minutes at 64 kbps.
 - PydanticAI: the four `to_web()` facts in "Chat".
-- Supabase: whether the `extensions` schema is on the connection's search path has not been checked.
 
 ## Boundaries
 

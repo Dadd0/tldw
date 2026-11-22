@@ -1,11 +1,18 @@
-"""Processes one video end to end: metadata, download, chunking, transcription, storage."""
+"""One function per stage, each for one video: transcribe, write the essay, embed."""
 
 import tempfile
 from pathlib import Path
 
 from tldw.audio import CHUNK_SECONDS, download_mp3, fetch_metadata, split_mp3
 from tldw.config import load_style
-from tldw.db import get_essay_source, save_essay, upsert_video
+from tldw.db import (
+    get_essay_source,
+    save_embeddings,
+    save_essay,
+    segments_to_embed,
+    upsert_video,
+)
+from tldw.embedding import embed
 from tldw.errors import CONFIG, ESSAY, TRANSCRIPTION, StageError
 from tldw.essay import generate_essay
 from tldw.segments import build_segments
@@ -92,6 +99,18 @@ def write_essay(video_id: str, settings: dict[str, str], *, replace: bool) -> No
         raise StageError(ESSAY, "essay", "transcript changed during essay generation")
 
 
+def embed_video(video_id: str, settings: dict[str, str]) -> None:
+    """Embed a video's segments of 20 words or more that have no vector yet."""
+    db_url = settings["SUPABASE_DB_URL"]
+    segments = segments_to_embed(db_url, video_id)
+    if not segments:
+        return
+    vectors = embed(
+        [segment["text"] for segment in segments], settings["OPENROUTER_API_KEY"]
+    )
+    save_embeddings(db_url, video_id, segments, vectors)
+
+
 def process_video(
     video: str,
     settings: dict[str, str],
@@ -99,7 +118,7 @@ def process_video(
     language: str | None = None,
     max_minutes: int | None = None,
 ) -> None:
-    """Transcribe a video and write its essay after saving the transcript."""
+    """Transcribe a video, then write its essay and embed its segments."""
     video_id = transcribe_video(
         video,
         settings,
@@ -109,3 +128,4 @@ def process_video(
     )
     if video_id is not None:
         write_essay(video_id, settings, replace=False)
+        embed_video(video_id, settings)

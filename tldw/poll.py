@@ -1,18 +1,20 @@
-"""Find and transcribe new videos from followed channels."""
+"""Transcribe new videos from followed channels, then write and embed what is pending."""
 
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 from tldw.config import load_channels, load_settings
 from tldw.db import (
     get_tracking_since,
     insert_channel,
-    stored_video_ids,
+    pending_embedding_video_ids,
     pending_essay_video_ids,
+    stored_video_ids,
 )
 from tldw.errors import CONFIG, StageError
 from tldw.feed import fetch_feed, first_tracking_since, select_candidates
-from tldw.pipeline import transcribe_video, write_essay
+from tldw.pipeline import embed_video, transcribe_video, write_essay
 
 LOCK_FILE = Path(".poll.lock")
 
@@ -79,15 +81,36 @@ def poll_channels(
             except StageError as error:
                 _log_failure(video_id, error, settings)
                 exit_code = exit_code or error.code
+
+    essay_code = _run_stage(
+        pending_essay_video_ids,
+        lambda video_id: write_essay(video_id, settings, replace=False),
+        settings,
+    )
+    embed_code = _run_stage(
+        pending_embedding_video_ids,
+        lambda video_id: embed_video(video_id, settings),
+        settings,
+    )
+    return exit_code or essay_code or embed_code
+
+
+def _run_stage(
+    pending: Callable[[str], list[str]],
+    stage: Callable[[str], None],
+    settings: dict[str, str],
+) -> int:
+    """Run one stage for every pending video and return the first failure's exit code."""
     try:
-        pending_ids = pending_essay_video_ids(db_url)
+        video_ids = pending(settings["SUPABASE_DB_URL"])
     except StageError as error:
         _log_failure("poll", error, settings)
-        return exit_code or error.code
+        return error.code
 
-    for video_id in pending_ids:
+    exit_code = 0
+    for video_id in video_ids:
         try:
-            write_essay(video_id, settings, replace=False)
+            stage(video_id)
         except StageError as error:
             _log_failure(video_id, error, settings)
             exit_code = exit_code or error.code
