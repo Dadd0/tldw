@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}{{ essay.title }} · TL;DW{% endblock %}
+
+{% block content %}
+  <article>
+    <header>
+      <h1>{{ essay.title }}</h1>
+      {{ essay_details(essay, now) }}
+    </header>
+    <div class="essay-body">
+      {{ body_html | safe }}
+    </div>
+  </article>
+{% endblock %}

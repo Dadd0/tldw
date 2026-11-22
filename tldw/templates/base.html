@@ -1,0 +1,74 @@
+{% macro essay_details(essay, now) -%}
+<p class="details">
+  {{ essay.channel_name }} |
+  {{ essay.duration_seconds | format_duration }} video |
+  {{ essay.body | reading_time }} min read |
+  <time datetime="{{ essay.display_date.isoformat() }}">
+    {{ essay.display_date | format_age(now) }}
+  </time> |
+  <a href="https://www.youtube.com/watch?v={{ essay.video_id | urlencode }}">video</a>
+</p>
+{%- endmacro -%}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TL;DW{% endblock %}</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f6f6ef;
+      color: #242420;
+      font: 10pt/1.6 Verdana, sans-serif;
+    }
+    a { color: inherit; }
+    .site-header { background: #ff6600; }
+    .site-header nav, main {
+      width: min(52rem, calc(100% - 2rem));
+      margin-inline: auto;
+    }
+    .site-header nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 3.25rem;
+    }
+    .brand {
+      font-size: 1.15rem;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    main { padding-block: 1.5rem 3rem; }
+    .essays { margin: 0; padding-inline-start: 2.5rem; }
+    .essays li {
+      padding: .75rem 0 .75rem .4rem;
+      border-bottom: 1px solid #deded3;
+    }
+    .essay-title { font-weight: bold; }
+    .details { color: #55554b; margin: .2rem 0 0; }
+    .details time { white-space: nowrap; }
+    .more { margin: 1.25rem 0 0 2.9rem; }
+    article { max-width: 44rem; margin-inline: auto; overflow-wrap: anywhere; }
+    article h1 {
+      margin: 0 0 .5rem;
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+      line-height: 1.2;
+    }
+    .essay-body { margin-top: 1.5rem; font-size: 1rem; line-height: 1.7; }
+    .essay-body img { max-width: 100%; }
+    .essay-body pre { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav aria-label="Main">
+      <a class="brand" href="{{ url_for('index') }}">TL;DW</a>
+      <a href="{{ chat_url }}">chat</a>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
