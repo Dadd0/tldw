@@ -43,10 +43,11 @@ Do not build any of these unless the owner asks:
 - `write <video-id>` writes or replaces an essay using `style.md`. A live run for Apollo 11 saved an essay in Supabase.
 - `transcribe` writes the essay after saving the transcript. After scanning the feeds, `poll` writes essays for stored transcripts that still need one.
 - Stage 3 embeds segments of 20 words or more: `transcribe` runs it after the essay, and `poll` runs it for every video with unembedded segments. A live run with `mongodb/voyage-4-lite` stored 1024-dimension vectors for all 9 eligible segments, and a cosine search for "astronauts landing on the moon" returned the Apollo 11 landing segment first. That run called `embed_video` directly. The stage 3 path through `poll` and `transcribe` has not been run live yet: confirm it on the next real poll that has new segments.
+- The private front page lists saved essays and renders them as HTML. A local browser check passed with an essay stored in Supabase.
 
 ### Not built
 
-- The front page and the chat.
+- The chat.
 
 ## Tech stack
 
@@ -475,7 +476,7 @@ Each step ends with something that can be checked.
 3. (Done) Add `poll` with the lock, and the language code in `channels.txt`.
 4. (Done) Add stage 2 and the `write` command. An essay row appears for a transcribed video.
 5. (Done) Add stage 3. Segments of 20 words or more have vectors.
-6. Add the front page.
+6. (Done) Add the front page.
 7. Add the chat. A question about a transcribed video returns an answer with both links.
 
 ## Verified facts

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% if essays %}
+    <ol class="essays" start="{{ first_rank }}" aria-label="Essays">
+      {% for essay in essays %}
+        <li>
+          <a class="essay-title" href="{{ url_for('essay', video_id=essay.video_id) }}">
+            {{ essay.title }}
+          </a>
+          {{ essay_details(essay, now) }}
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p>No essays on this page.</p>
+  {% endif %}
+
+  {% if next_page %}
+    <p class="more"><a href="/?p={{ next_page }}">More</a></p>
+  {% endif %}
+{% endblock %}

@@ -192,6 +192,37 @@ def save_essay(
     return True
 
 
+ESSAY_DETAILS_SQL = """
+    SELECT e.video_id, e.title, e.body, v.channel_name, v.duration_seconds,
+           COALESCE(v.published_at, v.created_at) AS display_date
+    FROM essays AS e
+    JOIN videos AS v ON v.video_id = e.video_id
+"""
+
+
+def list_essays(db_url: str, *, limit: int, offset: int) -> list[dict]:
+    """Return a page of essays with their video details, newest first."""
+    return query(
+        db_url,
+        ESSAY_DETAILS_SQL
+        + """
+        ORDER BY display_date DESC, e.video_id
+        LIMIT %(limit)s OFFSET %(offset)s
+        """,
+        {"limit": limit, "offset": offset},
+    )
+
+
+def get_essay(db_url: str, video_id: str) -> dict | None:
+    """Return the essay and video details for a video ID, if an essay exists."""
+    rows = query(
+        db_url,
+        ESSAY_DETAILS_SQL + "WHERE e.video_id = %(video_id)s",
+        {"video_id": video_id},
+    )
+    return rows[0] if rows else None
+
+
 def pending_embedding_video_ids(db_url: str) -> list[str]:
     """Return the IDs of videos with segments of 20 words or more that have no vector."""
     rows = query(
