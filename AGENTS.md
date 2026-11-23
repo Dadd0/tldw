@@ -44,10 +44,7 @@ Do not build any of these unless the owner asks:
 - `transcribe` writes the essay after saving the transcript. After scanning the feeds, `poll` writes essays for stored transcripts that still need one.
 - Stage 3 embeds segments of 20 words or more: `transcribe` runs it after the essay, and `poll` runs it for every video with unembedded segments. A live run with `mongodb/voyage-4-lite` stored 1024-dimension vectors for all 9 eligible segments, and a cosine search for "astronauts landing on the moon" returned the Apollo 11 landing segment first. That run called `embed_video` directly. The stage 3 path through `poll` and `transcribe` has not been run live yet: confirm it on the next real poll that has new segments.
 - The private front page lists saved essays and renders them as HTML. A local browser check passed with an essay stored in Supabase.
-
-### Not built
-
-- The chat.
+- The private chat searches embedded transcript segments and links to essays and timestamped YouTube videos. A local browser check used the Apollo 11 transcript.
 
 ## Tech stack
 
@@ -73,6 +70,8 @@ PydanticAI is not used for transcription or embeddings. It has no transcription 
 | `SUPABASE_DB_URL` | Postgres connection string (session pooler) |
 | `ESSAY_MODEL_ID` | OpenRouter model that writes essays |
 | `CHAT_MODEL_ID` | OpenRouter model that answers in the chat |
+
+The local setup uses `nvidia/nemotron-3-ultra-550b-a55b:free` for both `ESSAY_MODEL_ID` and `CHAT_MODEL_ID`.
 
 Fixed in code, each as a constant in the one module that uses it:
 
@@ -305,7 +304,7 @@ Only videos that have an essay appear.
 
 `answering.py` builds the chat app with `agent.to_web()`, PydanticAI's built-in chat UI, for an agent using `CHAT_MODEL_ID`. The agent has one tool:
 
-`search(query)` embeds the query, selects the 8 nearest segments by cosine distance among segments that have an embedding and belong to a video with an essay, and returns a list of dicts with: the segment text, the video title, the channel name, the essay title, the essay URL (`http://localhost:8000/essay/{video_id}`), and the video URL at that moment (`https://www.youtube.com/watch?v={video_id}&t={start}s`, with `start` rounded down to a whole second).
+`search(query)` embeds the query, selects up to 8 nearest segments by cosine distance among segments that have an embedding and belong to a video with an essay, and returns a list of dicts with: the segment text, the video title, the channel name, the essay title, the essay URL (`http://localhost:8000/essay/{video_id}`), and the video URL at that moment (`https://www.youtube.com/watch?v={video_id}&t={start}s`, with `start` rounded down to a whole second).
 
 The agent's instructions:
 
@@ -477,7 +476,7 @@ Each step ends with something that can be checked.
 4. (Done) Add stage 2 and the `write` command. An essay row appears for a transcribed video.
 5. (Done) Add stage 3. Segments of 20 words or more have vectors.
 6. (Done) Add the front page.
-7. Add the chat. A question about a transcribed video returns an answer with both links.
+7. (Done) Add the chat. A question about a transcribed video returns an answer with both links.
 
 ## Verified facts
 

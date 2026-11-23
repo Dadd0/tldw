@@ -249,6 +249,27 @@ def segments_to_embed(db_url: str, video_id: str) -> list[dict]:
     )
 
 
+def search_segments(db_url: str, embedding: list[float], *, limit: int) -> list[dict]:
+    """Return the closest embedded segments whose videos have essays."""
+    return query(
+        db_url,
+        """
+        SELECT s.text, s.start_seconds, v.video_id,
+               v.title AS video_title, v.channel_name, e.title AS essay_title
+        FROM segments AS s
+        JOIN videos AS v ON v.video_id = s.video_id
+        JOIN essays AS e ON e.video_id = s.video_id
+        WHERE s.embedding IS NOT NULL
+        ORDER BY s.embedding <=> %(embedding)s::vector
+        LIMIT %(limit)s
+        """,
+        {
+            "embedding": "[" + ",".join(map(str, embedding)) + "]",
+            "limit": limit,
+        },
+    )
+
+
 def save_embeddings(
     db_url: str, video_id: str, segments: list[dict], vectors: list[list[float]]
 ) -> None:
