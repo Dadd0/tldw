@@ -312,10 +312,12 @@ The title links to the essay page. Reading time is the essay's word count divide
 
 The agent's instructions:
 
-- Answer only from what `search` returns. Search more than once, with different wording, when a question spans several topics or sources.
-- After each claim, cite the search result it came from. The site checks the citations and hides them; the standalone chat shows them as links to the essay and the moment in the video.
+- Search before answering, more than once with different wording when a question spans several topics or sources, and build the answer on what `search` returns.
 - When the answer draws on several videos, say which part comes from which.
-- If nothing relevant comes back, say so. Do not answer from general knowledge.
+- Always answer. Where the transcripts do not cover the question, fill the gap from general knowledge and say which parts do not come from the transcripts.
+- Format in Markdown: bold the key terms and the sentences that carry the answer, italics for quotations, lists and headings only when the content needs them.
+- Write plainly for one reader, without greetings, run-ups, closing summaries or common AI phrasing.
+- The standalone chat links each claim from the transcripts to the essay and the moment in the video.
 
 Facts about `to_web()` that shape the design:
 
