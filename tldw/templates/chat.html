@@ -1,0 +1,29 @@
+<section id="chat" aria-labelledby="chat-title"{% if mode != 'ask' %} hidden{% endif %}>
+  <header class="chat-header">
+    <h2 id="chat-title" tabindex="-1">Ask</h2>
+    <a href="/ask" id="expand-chat" data-show="ask"{% if mode == 'ask' %} hidden{% endif %}>Expand to Ask</a>
+    <a href="/" id="back-to-read" data-show="read"{% if mode != 'ask' %} hidden{% endif %}>Back to Read</a>
+    <button type="button" id="close-chat"{% if mode == 'ask' %} hidden{% endif %}>Back to essay</button>
+  </header>
+  <div class="chat-log" role="log" aria-label="Conversation" tabindex="0">
+    <ol id="chat-turns"></ol>
+  </div>
+  <form id="chat-form">
+    <div class="chat-context">
+      <label for="chat-scope">Context</label>
+      <select id="chat-scope" aria-describedby="chat-essay">
+        <option value="all">All Knowledge</option>
+        <option value="essay" disabled>Current Essay</option>
+      </select>
+      <span id="chat-essay" hidden></span>
+      <button type="button" data-ask-essay hidden>Ask about this essay</button>
+    </div>
+    <label for="chat-question">Question</label>
+    <textarea id="chat-question" rows="2" required></textarea>
+    <div class="chat-submit">
+      <button type="submit" id="send-question">Send</button>
+      <button type="button" id="retry-question" hidden>Retry</button>
+      <span id="chat-status" role="status"></span>
+    </div>
+  </form>
+</section>

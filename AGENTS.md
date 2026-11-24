@@ -45,6 +45,7 @@ Do not build any of these unless the owner asks:
 - Stage 3 embeds segments of 20 words or more: `transcribe` runs it after the essay, and `poll` runs it for every video with unembedded segments. A live run with `mongodb/voyage-4-lite` stored 1024-dimension vectors for all 9 eligible segments, and a cosine search for "astronauts landing on the moon" returned the Apollo 11 landing segment first. That run called `embed_video` directly. The stage 3 path through `poll` and `transcribe` has not been run live yet: confirm it on the next real poll that has new segments.
 - The private front page lists saved essays and renders them as HTML. A local browser check passed with an essay stored in Supabase.
 - The private chat searches embedded transcript segments and links to essays and timestamped YouTube videos. A local browser check used the Apollo 11 transcript.
+- The site includes an essay chat panel and an Ask page that share one conversation per browser tab.
 
 ## Tech stack
 
@@ -87,7 +88,6 @@ Fixed in code, each as a constant in the one module that uses it:
 | Segments returned per chat search | 8 | `answering.py` |
 | Essays per page | 30 | `site.py` |
 | Front page address | `http://localhost:8000` | `answering.py` |
-| Chat address | `http://localhost:7932` | `site.py` |
 
 The transcription and embedding models are constants because the request shape is specific to the first and the database column size is specific to the second.
 
@@ -116,8 +116,8 @@ Requires `uv` (manages Python >= 3.14), `ffmpeg`, and `psql` (for database setup
 Poll:              uv run main.py poll
 One video:         uv run main.py transcribe <video-id-or-url> [--language it]
 Rewrite an essay:  uv run main.py write <video-id>
-Front page:        uv run uvicorn --factory tldw.site:build_site --host 127.0.0.1 --port 8000
-Chat:              uv run uvicorn --factory tldw.answering:build_chat --host 127.0.0.1 --port 7932
+Essays and Ask:    uv run uvicorn --factory tldw.site:build_site --host 127.0.0.1 --port 8000
+Standalone chat:   uv run uvicorn --factory tldw.answering:build_chat --host 127.0.0.1 --port 7932
 Format:            uvx ruff format
 Test:              uv run pytest
 Database setup:    psql "$SUPABASE_DB_URL" -f schema.sql
@@ -287,9 +287,9 @@ Known and accepted:
 
 ## Front page
 
-`site.py` builds a Starlette app with two pages, rendered on the server with Jinja2. No JavaScript.
+`site.py` builds a Starlette app with three pages rendered on the server with Jinja2. The chat views use native JavaScript and CSS.
 
-**`/`** lists essays newest first by the video's publish time (the row's creation time when the publish time is unknown), 30 per page, with a "More" link to `/?p=2`. It copies Hacker News: an orange (`#ff6600`) top bar, a `#f6f6ef` background, Verdana at 10pt, a numbered list. The top bar holds the name "TL;DW" and a "chat" link to `http://localhost:7932`. Each row is:
+**`/`** lists essays newest first by the video's publish time (the row's creation time when the publish time is unknown), 30 per page, with a "More" link to `/?p=2`. The design uses an orange (`#ff6600`) top bar, a `#f6f6ef` background, Verdana at 10pt, and a numbered list. The top bar holds the name "TL;DW" and the **Read** and **Ask** links. Each row is:
 
 ```
 1. Essay title
@@ -300,24 +300,24 @@ The title links to the essay page and "video" links to YouTube. Reading time is 
 
 **`/essay/{video_id}`** shows the essay title, the same line of details, and the body rendered with `MarkdownIt("commonmark", {"html": False})`. The option matters: without it, markdown-it-py passes raw HTML in the essay straight into the page.
 
-Only videos that have an essay appear.
+**`/ask`** shows the chat in the main area. The essay panel and Ask share the conversation and selected context in `sessionStorage`. Changing modes keeps an in-flight reply running. **Back to Read** restores the last essay and reading position, or opens the home page.
 
 ## Chat
 
-`answering.py` builds the chat app with `agent.to_web()`, PydanticAI's built-in chat UI, for an agent using `CHAT_MODEL_ID`. The agent has one tool:
+`answering.py` builds the agent using `CHAT_MODEL_ID`. The blog's `POST /api/ask` accepts a question, the selected context, and the completed turns. **Current Essay** filters by the associated video. **All Knowledge** searches all embedded segments, including videos without essays. When the user changes scope, earlier turns help resolve references and the new scope controls retrieval.
 
-`search(query)` embeds the query, selects up to 8 nearest segments by cosine distance among segments that have an embedding and belong to a video with an essay, and returns a list of dicts with: the segment text, the video title, the channel name, the essay title, the essay URL (`http://localhost:8000/essay/{video_id}`), and the video URL at that moment (`https://www.youtube.com/watch?v={video_id}&t={start}s`, with `start` rounded down to a whole second).
+`search(query)` embeds the query and selects up to 8 nearest embedded segments by cosine distance within the selected scope. It returns the segment text, video title, channel name, optional essay title and URL, and the video URL at that moment (`https://www.youtube.com/watch?v={video_id}&t={start}s`, with `start` rounded down to a whole second). The standalone chat on `7932` uses `agent.to_web()` and searches only videos with essays.
 
 The agent's instructions:
 
 - Answer only from what `search` returns. Search more than once, with different wording, when a question spans several topics or sources.
-- After each claim, link the essay and the moment in the video it came from.
+- After each claim, link the moment in the video it came from and the essay when available.
 - When the answer draws on several videos, say which part comes from which.
 - If nothing relevant comes back, say so. Do not answer from general knowledge.
 
 Facts about `to_web()` that shape the design:
 
-- It claims the routes `/` and `/{id}` and cannot be mounted under a sub-path. That is why the chat is a separate app on its own port and not a page of the front page.
+- It claims the routes `/` and `/{id}` and cannot be mounted under a sub-path. The standalone app serves it on its own port.
 - It answers only to requests whose `Host` is an IP address or `localhost`. Through the SSH tunnel the host is `localhost`, so no setting is needed.
 - By default it downloads its UI from a CDN on first use and caches it.
 - PydanticAI documents it as meant for local development. That is acceptable here because one person uses it through a tunnel.
@@ -398,9 +398,10 @@ tldw/
   db.py            → every SQL statement
   pipeline.py      → one function per stage, each for one video
   poll.py          → the lock, then the loops over channels, videos and stages
-  site.py          → build_site(): the front page app and its formatting helpers
-  answering.py     → build_chat(): the chat agent, its search tool, and the chat app
-  templates/       → base.html, index.html, essay.html
+  site.py          → build_site(): the essay and Ask pages and their formatting helpers
+  answering.py     → chat agent, transcript search, Ask endpoint, and standalone chat
+  templates/       → essay list, essay, and shared chat markup
+  static/          → integrated chat behavior and layout
 tests/             → one test file per module tested, plus a sample feed XML
 schema.sql
 channels.txt
@@ -425,7 +426,7 @@ Module rules:
 
 Plain functions with type hints and a one-line docstring. Rows are plain dicts keyed by column name. There are two classes in the whole codebase: `StageError`, which carries the exit code and the stage name, and the essay output model.
 
-Each module that wraps an external system catches that system's own errors and raises `StageError`. `StageError` is caught in only two places: around each video and each channel in `poll.py`, so the poll continues, and at the top of `main.py`, to set the exit code.
+Each module that wraps an external system catches that system's own errors and raises `StageError`. The poll catches it per video and channel so it can continue. The CLI uses it to set the exit code. The Ask endpoint uses it to return a retryable error to the browser.
 
 ```python
 def select_candidates(

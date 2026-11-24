@@ -15,6 +15,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}TL;DW{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='chat.css').path }}">
+  <script type="module" src="{{ url_for('static', path='chat.js').path }}"></script>
   <style>
     body {
       margin: 0;
@@ -64,11 +66,17 @@
   <header class="site-header">
     <nav aria-label="Main">
       <a class="brand" href="{{ url_for('index') }}">TL;DW</a>
-      <a href="{{ chat_url }}">chat</a>
+      <div class="site-modes">
+        <a href="/" data-show="read"{% if mode != 'ask' %} aria-current="page"{% endif %}>Read</a>
+        <a href="/ask" data-show="ask"{% if mode == 'ask' %} aria-current="page"{% endif %}>Ask</a>
+      </div>
     </nav>
   </header>
-  <main>
-    {% block content %}{% endblock %}
+  <main id="workspace" data-mode="{{ mode | default('read') }}">
+    <div id="read-view"{% if mode == 'ask' %} hidden{% endif %}>
+      {% block content %}{% endblock %}
+    </div>
+    {% include "chat.html" %}
   </main>
 </body>
 </html>
