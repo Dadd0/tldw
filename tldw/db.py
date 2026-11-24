@@ -192,20 +192,22 @@ def save_essay(
 
 
 ESSAY_DETAILS_SQL = """
-    SELECT e.video_id, e.title, e.body, v.channel_name, v.duration_seconds,
-           COALESCE(v.published_at, v.created_at) AS display_date
+    SELECT e.video_id, e.title, e.body, e.created_at AS added_at, v.channel_name,
+           v.duration_seconds, COALESCE(v.published_at, v.created_at) AS display_date
     FROM essays AS e
     JOIN videos AS v ON v.video_id = e.video_id
 """
 
 
 def list_essays(db_url: str, *, limit: int, offset: int) -> list[dict]:
-    """Return a page of essays with their video details, newest first."""
+    """Return a page of essays, newest first, marking the one added most recently."""
     return query(
         db_url,
-        ESSAY_DETAILS_SQL
+        "SELECT d.*, d.added_at = max(d.added_at) OVER () AS latest FROM ("
+        + ESSAY_DETAILS_SQL
         + """
-        ORDER BY display_date DESC, e.video_id
+        ) AS d
+        ORDER BY display_date DESC, video_id
         LIMIT %(limit)s OFFSET %(offset)s
         """,
         {"limit": limit, "offset": offset},

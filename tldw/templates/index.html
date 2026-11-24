@@ -22,6 +22,7 @@
           <a class="essay-title" href="{{ url_for('essay', video_id=essay.video_id) }}">
             {{ essay.title }}
           </a>
+          {% if essay.latest %}<span class="latest">new</span>{% endif %}
           {{ essay_details(essay, now) }}
         </li>
       {% endfor %}
