@@ -32,6 +32,43 @@ def test_all_knowledge_has_no_essay_filter() -> None:
     ) == ("Find examples", "", [])
 
 
+def test_selected_text_uses_the_originating_essay_scope() -> None:
+    """Use the excerpt to interpret the question within its essay transcript."""
+    question, video_id, history = parse_ask(
+        {
+            "question": " Explain this. ",
+            "context": {
+                "mode": "selected",
+                "video_id": "first",
+                "selected_text": " Shared weights save memory. ",
+            },
+            "turns": [{"question": "What is looping?", "answer": "Repeating layers."}],
+        }
+    )
+
+    assert (
+        question
+        == "Question: Explain this.\nSelected essay passage: 'Shared weights save memory.'"
+    )
+    assert video_id == "first"
+    assert len(history) == 2
+
+
+@pytest.mark.parametrize(
+    "context",
+    [
+        {"mode": "selected", "video_id": "first"},
+        {"mode": "selected", "video_id": "first", "selected_text": "  "},
+        {"mode": "selected", "video_id": "first", "selected_text": 1},
+        {"mode": "selected", "selected_text": "A passage"},
+    ],
+)
+def test_selected_text_requires_an_essay_and_a_passage(context: dict) -> None:
+    """Incomplete selected context never falls back to another scope."""
+    with pytest.raises(ValueError, match="Choose an essay and select a passage"):
+        parse_ask({"question": "Explain this", "context": context, "turns": []})
+
+
 @pytest.mark.parametrize("context", [{"mode": "essay"}, {"mode": "unknown"}, None])
 def test_ask_rejects_invalid_scope(context: object) -> None:
     """An incomplete or unknown scope never silently runs a global search."""

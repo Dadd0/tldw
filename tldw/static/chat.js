@@ -1,11 +1,13 @@
 const workspace = document.querySelector("#workspace");
 const readView = document.querySelector("#read-view");
 const chat = document.querySelector("#chat");
+const divider = document.querySelector("#chat-divider");
 const title = document.querySelector("#chat-title");
 const form = document.querySelector("#chat-form");
 const turns = document.querySelector("#chat-turns");
 const scope = document.querySelector("#chat-scope");
 const essayLabel = document.querySelector("#chat-essay");
+const selectionPreview = document.querySelector("#chat-selection");
 const question = document.querySelector("#chat-question");
 const send = document.querySelector("#send-question");
 const retry = document.querySelector("#retry-question");
@@ -32,7 +34,7 @@ function save(key, value) {
   }
 }
 
-const emptyThread = () => ({ mode: null, essay: null, turns: [], draft: "", retryScope: null });
+const emptyThread = () => ({ mode: null, essay: null, selectedText: "", turns: [], draft: "", retryScope: null });
 const currentPath = () => location.pathname + location.search;
 const currentEssay = () => readView.querySelector("article[data-video-id]")?.dataset;
 const readTarget = () => load("lastEssay", currentEssay() ? readPath : "/");
@@ -42,6 +44,7 @@ let mode = workspace.dataset.mode;
 let readPath = mode === "read" ? currentPath() : null;
 let readTitle = mode === "read" ? document.title : "TL;DW";
 let panelOpen = false;
+let selectedText = "";
 let request = null;
 let navigation = 0;
 let restoreFrame = 0;
@@ -72,11 +75,27 @@ function restoreReading() {
   });
 }
 
+function updateSelection() {
+  const button = readView.querySelector("[data-ask-selection]");
+  const body = readView.querySelector(".essay-body");
+  const selection = window.getSelection();
+  selectedText = "";
+  if (mode === "read" && selection?.rangeCount === 1 &&
+      body?.contains(selection.anchorNode) && body.contains(selection.focusNode)) {
+    selectedText = selection.toString().trim();
+  }
+  if (button) button.hidden = !selectedText;
+}
+
 function updateContext() {
+  const essayScoped = thread.mode === "essay" || thread.mode === "selected";
   scope.value = thread.mode ?? "all";
   scope.options[1].disabled = !thread.essay;
-  essayLabel.hidden = thread.mode !== "essay";
-  essayLabel.textContent = thread.essay?.title ?? "";
+  scope.options[2].disabled = !thread.selectedText;
+  essayLabel.hidden = !essayScoped;
+  essayLabel.textContent = essayScoped ? thread.essay.title : "";
+  selectionPreview.hidden = thread.mode !== "selected";
+  selectionPreview.textContent = selectionPreview.hidden ? "" : thread.selectedText;
 
   const essay = currentEssay();
   const openButton = readView.querySelector("[data-open-chat]");
@@ -84,7 +103,7 @@ function updateContext() {
     openButton.hidden = panelOpen || !thread.mode;
     openButton.setAttribute("aria-expanded", String(panelOpen));
   }
-  const canSwitch = essay && (thread.mode !== "essay" || thread.essay?.id !== essay.videoId);
+  const canSwitch = essay && (!essayScoped || thread.essay?.id !== essay.videoId);
   const essayButton = readView.querySelector("[data-ask-essay]");
   if (essayButton) essayButton.hidden = !canSwitch || panelOpen;
   chat.querySelector("[data-ask-essay]").hidden = !canSwitch || !panelOpen;
@@ -95,6 +114,7 @@ function updateView() {
   workspace.classList.toggle("panel-open", panelOpen);
   readView.hidden = mode === "ask";
   chat.hidden = mode === "read" && !panelOpen;
+  divider.hidden = !panelOpen;
   close.hidden = expand.hidden = mode === "ask";
   back.hidden = mode === "read";
   back.href = readTarget();
@@ -105,6 +125,7 @@ function updateView() {
   }
   document.title = mode === "ask" ? "Ask · TL;DW" : readTitle;
   updateContext();
+  updateSelection();
 }
 
 function focusReading() {
@@ -162,12 +183,14 @@ async function showRead(target, push) {
   focusReading();
 }
 
-function openPanel(useCurrentEssay) {
+function openPanel(context) {
   rememberReading();
-  if (useCurrentEssay) {
+  if (context) {
     const essay = currentEssay();
+    if (thread.essay?.id !== essay.videoId) thread.selectedText = "";
     thread.essay = { id: essay.videoId, title: essay.essayTitle };
-    thread.mode = "essay";
+    thread.mode = context;
+    if (context === "selected") thread.selectedText = selectedText;
     save("thread", thread);
   }
   panelOpen = true;
@@ -175,12 +198,21 @@ function openPanel(useCurrentEssay) {
   if (readView.getClientRects().length) restoreReading();
   else window.scrollTo(0, 0);
   scrollConversation();
-  title.focus({ preventScroll: true });
+  const focusTarget = context === "selected" ? question : title;
+  focusTarget.focus({ preventScroll: true });
 }
 
+document.addEventListener("selectionchange", updateSelection);
+readView.addEventListener("pointerdown", (event) => {
+  if (event.target.closest("[data-ask-selection]")) event.preventDefault();
+});
+
 workspace.addEventListener("click", (event) => {
-  if (event.target.closest("[data-ask-essay]")) openPanel(true);
-  else if (event.target.closest("[data-open-chat]")) openPanel(false);
+  if (event.target.closest("[data-ask-selection]") && selectedText) {
+    openPanel("selected");
+    window.getSelection()?.removeAllRanges();
+  } else if (event.target.closest("[data-ask-essay]")) openPanel("essay");
+  else if (event.target.closest("[data-open-chat]")) openPanel();
 });
 
 close.addEventListener("click", () => {
@@ -307,11 +339,53 @@ async function sendQuestion(context) {
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   const context = { mode: thread.mode ?? "all" };
-  if (context.mode === "essay") context.video_id = thread.essay.id;
+  if (context.mode !== "all") context.video_id = thread.essay.id;
+  if (context.mode === "selected") context.selected_text = thread.selectedText;
   void sendQuestion(context);
 });
 
 retry.addEventListener("click", () => void sendQuestion(thread.retryScope));
+
+const minChatWidth = Number(divider.getAttribute("aria-valuemin"));
+const maxChatWidth = Number(divider.getAttribute("aria-valuemax"));
+
+function resizeChat(width) {
+  const share = Math.round(Math.max(minChatWidth, Math.min(maxChatWidth, width)));
+  if (share === Number(divider.getAttribute("aria-valuenow"))) return;
+  workspace.style.setProperty("--chat-width", `${share}%`);
+  divider.setAttribute("aria-valuenow", String(share));
+  divider.setAttribute("aria-valuetext", `${share}%`);
+  restoreReading();
+}
+
+divider.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0 || !event.isPrimary) return;
+  event.preventDefault();
+  divider.focus({ preventScroll: true });
+  rememberReading();
+  divider.setPointerCapture(event.pointerId);
+});
+
+divider.addEventListener("pointermove", (event) => {
+  if (!divider.hasPointerCapture(event.pointerId)) return;
+  const bounds = workspace.getBoundingClientRect();
+  const width = bounds.right - event.clientX - divider.offsetWidth / 2;
+  resizeChat(100 * width / bounds.width);
+});
+
+divider.addEventListener("keydown", (event) => {
+  const width = Number(divider.getAttribute("aria-valuenow"));
+  const next = {
+    ArrowLeft: width + 2,
+    ArrowRight: width - 2,
+    Home: minChatWidth,
+    End: maxChatWidth,
+  }[event.key];
+  if (next === undefined) return;
+  event.preventDefault();
+  rememberReading();
+  resizeChat(next);
+});
 
 window.addEventListener("scroll", () => {
   if (layoutWidth === window.innerWidth) rememberReading();
