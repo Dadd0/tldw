@@ -81,24 +81,26 @@ def split_mp3(mp3: Path, *, max_seconds: int | None = None) -> list[Path]:
             "-b:a",
             f"{MP3_BITRATE_KBPS}k",
         ]
-    result = subprocess.run(
-        [
-            "ffmpeg",
-            "-nostdin",
-            "-loglevel",
-            "error",
-            "-i",
-            str(mp3),
-            "-f",
-            "segment",
-            "-segment_time",
-            str(CHUNK_SECONDS),
-            *audio_options,
-            str(mp3.with_name(f"{mp3.stem}_%04d.mp3")),
-        ],
-        capture_output=True,
-        text=True,
-    )
+    command = [
+        "ffmpeg",
+        "-nostdin",
+        "-loglevel",
+        "error",
+        "-i",
+        str(mp3),
+        "-f",
+        "segment",
+        "-segment_time",
+        str(CHUNK_SECONDS),
+        *audio_options,
+        str(mp3.with_name(f"{mp3.stem}_%04d.mp3")),
+    ]
+    try:
+        result = subprocess.run(command, capture_output=True, text=True)
+    except OSError as error:
+        raise StageError(
+            TRANSCRIPTION, "chunking", f"cannot start ffmpeg: {error}"
+        ) from error
     chunks = sorted(mp3.parent.glob(f"{mp3.stem}_*.mp3"))
     if result.returncode != 0 or not chunks:
         raise StageError(
