@@ -129,6 +129,11 @@
   outline: 2px solid #000;
   outline-offset: 1px;
 }
+/* Text fields show focus on every click, so keep their ring thin. */
+#workspace input:focus-visible, #workspace textarea:focus-visible {
+  outline: 1px solid #ff6600;
+  outline-offset: 0;
+}
 
 #workspace[data-mode="ask"] #chat, #workspace.panel-open #chat {
   height: calc(var(--chat-viewport, 100dvh) - 4rem);
