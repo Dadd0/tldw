@@ -5,8 +5,7 @@
   {{ essay.body | reading_time }} min read |
   <time datetime="{{ essay.display_date.isoformat() }}">
     {{ essay.display_date | format_age(now) }}
-  </time> |
-  <a href="https://www.youtube.com/watch?v={{ essay.video_id | urlencode }}">video</a>
+  </time>
 </p>
 {%- endmacro -%}
 <!doctype html>
@@ -16,67 +15,74 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}TL;DW{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', path='chat.css').path }}">
+  {% if mode != "submit" %}
   <script type="module" src="{{ url_for('static', path='chat.js').path }}"></script>
+  {% endif %}
   <style>
     body {
       margin: 0;
+      background: #fff;
+      color: #000;
+      font: 10pt Verdana, Geneva, sans-serif;
+    }
+    a { color: #000; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page {
+      width: 85%;
+      margin: 8px auto 0;
       background: #f6f6ef;
-      color: #242420;
-      font: 10pt/1.6 Verdana, sans-serif;
     }
-    a { color: inherit; }
-    .site-header { background: #ff6600; }
-    .site-header nav, main {
-      width: min(52rem, calc(100% - 2rem));
-      margin-inline: auto;
-    }
-    .site-header nav {
+    .site-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      min-height: 3.25rem;
+      gap: 10px;
+      padding: 2px 4px;
+      background: #ff6600;
+      line-height: 18px;
     }
-    .brand {
-      font-size: 1.15rem;
-      font-weight: bold;
-      text-decoration: none;
-    }
-    main { padding-block: 1.5rem 3rem; }
-    .essays { margin: 0; padding-inline-start: 2.5rem; }
-    .essays li {
-      padding: .75rem 0 .75rem .4rem;
-      border-bottom: 1px solid #deded3;
-    }
-    .essay-title { font-weight: bold; }
-    .details { color: #55554b; margin: .2rem 0 0; }
+    .brand { font-weight: bold; }
+    main { padding: 10px 4px 16px; }
+    .essays { margin: 0; padding-inline-start: 3em; }
+    .essays li { margin-bottom: 5px; }
+    .essays li::marker { color: #828282; }
+    .essay-title:visited { color: #828282; }
+    .details { color: #828282; font-size: 7pt; margin: 2px 0 0; }
+    .details a { color: #828282; }
     .details time { white-space: nowrap; }
-    .more { margin: 1.25rem 0 0 2.9rem; }
-    article { max-width: 44rem; margin-inline: auto; overflow-wrap: anywhere; }
-    article h1 {
-      margin: 0 0 .5rem;
-      font-size: clamp(1.6rem, 5vw, 2.2rem);
-      line-height: 1.2;
-    }
-    .essay-body { margin-top: 1.5rem; font-size: 1rem; line-height: 1.7; }
+    .more { margin: 10px 0 0 3em; }
+    article { overflow-wrap: anywhere; }
+    article h1 { margin: 0; font-size: 12pt; }
+    .essay-body { margin-top: 12px; line-height: 1.5; }
+    .essay-body h2, .essay-body h3 { font-size: 10pt; margin: 1.5em 0 .5em; }
+    .essay-body a { text-decoration: underline; }
     .essay-body img { max-width: 100%; }
     .essay-body pre { overflow-x: auto; }
+    @media (max-width: 750px) { .page { width: 100%; margin-top: 0; } }
   </style>
 </head>
 <body>
-  <header class="site-header">
-    <nav aria-label="Main">
+  <div class="page">
+    <header class="site-header">
       <a class="brand" href="{{ url_for('index') }}">TL;DW</a>
-      <div class="site-modes">
-        <a href="/" data-show="read"{% if mode != 'ask' %} aria-current="page"{% endif %}>Read</a>
-        <a href="/ask" data-show="ask"{% if mode == 'ask' %} aria-current="page"{% endif %}>Ask</a>
+      <nav class="site-modes" aria-label="Main">
+        <a href="/"{% if mode not in ('ask', 'submit') %} aria-current="page"{% endif %}>read</a>
+        <a href="/ask"{% if mode == 'ask' %} aria-current="page"{% endif %}>ask</a>
+        <a href="/submit"{% if mode == 'submit' %} aria-current="page"{% endif %}>submit</a>
+      </nav>
+    </header>
+    <main id="workspace" data-mode="{{ mode | default('read') }}">
+      <div id="read-view"{% if mode == 'ask' %} hidden{% endif %}>
+        {% block content %}{% endblock %}
+        {% if mode != "submit" %}
+        <button type="button" class="chat-launcher" data-open-chat aria-controls="chat" aria-label="Open chat" hidden>
+          <img src="{{ url_for('static', path='chat-icon.png').path }}" alt="">
+        </button>
+        {% endif %}
       </div>
-    </nav>
-  </header>
-  <main id="workspace" data-mode="{{ mode | default('read') }}">
-    <div id="read-view"{% if mode == 'ask' %} hidden{% endif %}>
-      {% block content %}{% endblock %}
-    </div>
-    {% include "chat.html" %}
-  </main>
+      {% if mode != "submit" %}
+      {% include "chat.html" %}
+      {% endif %}
+    </main>
+  </div>
 </body>
 </html>

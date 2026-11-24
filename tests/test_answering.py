@@ -1,6 +1,11 @@
-import pytest
+import asyncio
+import json
 
-from tldw.answering import link_sources, parse_ask
+import pytest
+from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.test import TestModel as LocalModel
+
+from tldw.answering import parse_ask, stream_answer, strip_citations
 
 
 def test_current_essay_uses_its_own_scope_with_prior_turns() -> None:
@@ -35,15 +40,73 @@ def test_all_knowledge_has_no_essay_filter() -> None:
 @pytest.mark.parametrize("context", [{"mode": "essay"}, {"mode": "unknown"}, None])
 def test_ask_rejects_invalid_scope(context: object) -> None:
     """An incomplete or unknown scope never silently runs a global search."""
-    with pytest.raises(ValueError, match="Choose All Knowledge or an essay"):
+    with pytest.raises(ValueError, match="Context must be all videos or one essay"):
         parse_ask({"question": "Find examples", "context": context, "turns": []})
 
 
-def test_link_sources_uses_only_current_search_results() -> None:
-    """Convert known citations and reject a marker missing from this search."""
-    citations = {"[source:2]": "[Video](https://www.youtube.com/watch?v=test&t=9s)"}
+def test_strip_citations_uses_only_current_search_results() -> None:
+    """Drop known citations and reject answers with missing or unknown markers."""
+    citations = {"[source:1]", "[source:2]"}
 
-    assert link_sources("They landed [source:2].", citations) == (
-        "They landed [Video](https://www.youtube.com/watch?v=test&t=9s)."
-    )
-    assert link_sources("They landed [source:2] [source:9].", citations) is None
+    assert strip_citations("They landed [source:2].", citations) == "They landed."
+    assert strip_citations("Both [source:1][source:2].", citations) == "Both."
+    assert strip_citations("They landed.", citations) is None
+    assert strip_citations("They landed [source:2] [source:9].", citations) is None
+
+
+@pytest.mark.parametrize(
+    ("output", "video_id", "field", "expected"),
+    [
+        (
+            "<b>Moon</b> [source:1]",
+            "",
+            "html",
+            "<p>&lt;b&gt;Moon&lt;/b&gt;</p>\n",
+        ),
+        (
+            "Unknown [source:9]",
+            "",
+            "error",
+            "Couldn't verify the answer's sources. Try again.",
+        ),
+        (
+            "NO_EVIDENCE",
+            "moon",
+            "answer",
+            "I couldn't find relevant evidence in this essay.",
+        ),
+        (
+            "NO_EVIDENCE",
+            "",
+            "answer",
+            "I couldn't find relevant evidence in the collection.",
+        ),
+        (
+            "No relevant transcript segments found.\n\nNO_EVIDENCE",
+            "",
+            "answer",
+            "I couldn't find relevant evidence in the collection.",
+        ),
+    ],
+)
+def test_stream_answer(output: str, video_id: str, field: str, expected: str) -> None:
+    """Send plain deltas before the cited, HTML-escaped answer or source error."""
+    agent = Agent(LocalModel(custom_output_text=output), deps_type=dict)
+
+    @agent.tool
+    def cite(ctx: RunContext[dict]) -> str:
+        """Return one source from a local fixture."""
+        ctx.deps["citations"].add("[source:1]")
+        return "[source:1]"
+
+    async def collect() -> list[dict]:
+        """Decode the records emitted by the real agent loop."""
+        return [
+            json.loads(line)
+            async for line in stream_answer(agent, "Moon?", video_id, [])
+        ]
+
+    *partials, terminal = asyncio.run(collect())
+    assert len(partials) > 1
+    assert "".join(part["delta"] for part in partials) == output
+    assert terminal[field] == expected
