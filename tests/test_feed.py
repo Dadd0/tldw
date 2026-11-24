@@ -27,8 +27,30 @@ def test_parse_empty_feed():
     "xml",
     [
         "not xml",
-        '<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>no date</title></entry></feed>',
-        '<feed xmlns="http://www.w3.org/2005/Atom"><entry><published>yesterday</published></entry></feed>',
+        (
+            '<feed xmlns="http://www.w3.org/2005/Atom"'
+            ' xmlns:yt="http://www.youtube.com/xml/schemas/2015">'
+            "<entry><yt:videoId>olpH5z9Aue4</yt:videoId>"
+            "<title>no date</title></entry></feed>"
+        ),
+        (
+            '<feed xmlns="http://www.w3.org/2005/Atom"'
+            ' xmlns:yt="http://www.youtube.com/xml/schemas/2015">'
+            "<entry><yt:videoId>olpH5z9Aue4</yt:videoId>"
+            "<published>yesterday</published></entry></feed>"
+        ),
+        (
+            '<feed xmlns="http://www.w3.org/2005/Atom"'
+            ' xmlns:yt="http://www.youtube.com/xml/schemas/2015">'
+            "<entry><yt:videoId>olpH5z9Aue4</yt:videoId>"
+            "<title>Example</title><published>2026-11-24T08:00:00</published>"
+            "</entry></feed>"
+        ),
+        (
+            '<feed xmlns="http://www.w3.org/2005/Atom">'
+            "<entry><title>Example</title>"
+            "<published>2026-11-24T08:00:00Z</published></entry></feed>"
+        ),
     ],
 )
 def test_parse_rejects_broken_feed(xml):

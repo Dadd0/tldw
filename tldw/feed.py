@@ -31,16 +31,27 @@ def fetch_feed(channel_id: str) -> list[dict]:
 def parse_feed(xml: str) -> list[dict]:
     """Return the feed's entries as {video_id, title, published}, oldest first."""
     try:
-        entries = [
-            {
-                "video_id": e.findtext("yt:videoId", namespaces=NAMESPACES),
-                "title": e.findtext("a:title", namespaces=NAMESPACES),
-                "published": datetime.fromisoformat(
-                    e.findtext("a:published", namespaces=NAMESPACES)
-                ),
-            }
-            for e in ElementTree.fromstring(xml).findall("a:entry", NAMESPACES)
-        ]
+        entries = []
+        for entry in ElementTree.fromstring(xml).findall("a:entry", NAMESPACES):
+            video_id = (
+                entry.findtext("yt:videoId", namespaces=NAMESPACES) or ""
+            ).strip()
+            if not video_id:
+                raise ValueError("entry is missing a video ID")
+
+            published = datetime.fromisoformat(
+                entry.findtext("a:published", namespaces=NAMESPACES) or ""
+            )
+            if published.tzinfo is None:
+                raise ValueError("entry publication time is missing a timezone")
+
+            entries.append(
+                {
+                    "video_id": video_id,
+                    "title": entry.findtext("a:title", namespaces=NAMESPACES),
+                    "published": published,
+                }
+            )
     except (ElementTree.ParseError, TypeError, ValueError) as e:
         raise StageError(FEED, "feed", f"cannot parse feed: {e}") from e
     return sorted(entries, key=lambda e: e["published"])
