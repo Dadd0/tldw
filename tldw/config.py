@@ -18,7 +18,8 @@ CHANNEL_ID = re.compile(r"UC[A-Za-z0-9_-]{22}")
 def load_settings(env: Mapping[str, str] | None = None) -> dict[str, str]:
     """Return the settings keyed by variable name, reading .env when no mapping is given."""
     if env is None:
-        load_dotenv()
+        # override: a child started by the site must not inherit settings older than .env
+        load_dotenv(override=True)
         env = os.environ
     missing = [name for name in REQUIRED if not env.get(name)]
     if missing:
