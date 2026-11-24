@@ -41,7 +41,9 @@ psql "$SUPABASE_DB_URL" -f schema.sql
 uv run main.py poll                                                        # poll channels and run pipeline stages
 uv run main.py transcribe <video-id-or-url> [--language it]                # process one video
 uv run main.py write <video-id>                                            # rewrite one essay
-uv run uvicorn --factory tldw.site:build_site --host 127.0.0.1 --port 8000 # front page
-uv run uvicorn --factory tldw.answering:build_chat --host 127.0.0.1 --port 7932 # chat
+uv run uvicorn --factory tldw.site:build_site --host 127.0.0.1 --port 8000     # essays and integrated Ask
+uv run uvicorn --factory tldw.answering:build_chat --host 127.0.0.1 --port 7932 # standalone chat
 uv run pytest                                                              # unit tests
 ```
+
+Open **Ask** from the site or use **Ask about this essay** while reading. Both views share one conversation per browser tab. Choose **Current Essay** to search that video's transcript or **All Knowledge** to search the full collection of embedded transcripts.

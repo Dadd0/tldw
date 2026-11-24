@@ -9,14 +9,15 @@ from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.routing import Route
+from starlette.routing import Mount, Route
+from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
+from tldw.answering import build_ask
 from tldw.config import load_settings
 from tldw.db import get_essay, list_essays
 
 PAGE_SIZE = 30
-CHAT_URL = "http://localhost:7932"
 
 
 def reading_time(body: str) -> int:
@@ -47,10 +48,11 @@ def format_age(date: datetime, now: datetime) -> str:
 
 def build_site() -> Starlette:
     """Build the essay site using the project's settings."""
-    db_url = load_settings()["SUPABASE_DB_URL"]
+    settings = load_settings()
+    db_url = settings["SUPABASE_DB_URL"]
     markdown = MarkdownIt("commonmark", {"html": False})
-    templates = Jinja2Templates(directory=Path(__file__).with_name("templates"))
-    templates.env.globals["chat_url"] = CHAT_URL
+    package_dir = Path(__file__).parent
+    templates = Jinja2Templates(directory=package_dir / "templates")
     templates.env.filters.update(
         reading_time=reading_time,
         format_duration=format_duration,
@@ -96,9 +98,18 @@ def build_site() -> Starlette:
             },
         )
 
+    def ask_page(request: Request) -> Response:
+        """Render the full-page chat."""
+        return templates.TemplateResponse(request, "ask.html", {"mode": "ask"})
+
     return Starlette(
         routes=[
             Route("/", index, name="index"),
             Route("/essay/{video_id}", essay_page, name="essay"),
+            Route("/ask", ask_page, name="ask"),
+            Route("/api/ask", build_ask(settings), methods=["POST"]),
+            Mount(
+                "/static", StaticFiles(directory=package_dir / "static"), name="static"
+            ),
         ]
     )
