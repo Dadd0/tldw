@@ -8,7 +8,7 @@
           {% if row.processing %}<span class="submission-spinner" aria-hidden="true"></span>{% endif %}
           {{ row.title }}
           <p class="details">
-            {{ "processing" if row.processing else "failed, see transcribe.log" }} ·
+            {% if row.processing %}{{ row.progress }}{% else %}failed, see <a href="{{ url_for('submission_log', video_id=row.video_id).path }}">logs/{{ row.video_id }}.log</a>{% endif %} ·
             submitted <time datetime="{{ row.submitted_at.isoformat() }}">{{ row.submitted_at | format_age(now) }}</time>
           </p>
         </li>

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -6,13 +7,67 @@ import pytest
 from markdown_it import MarkdownIt
 
 from tldw.site import (
+    PROGRESS_TAIL_BYTES,
     format_age,
     format_duration,
+    format_progress,
+    read_progress,
     reading_time,
     render_essay,
     submission_rows,
     submitted_video_id,
 )
+
+
+@pytest.mark.parametrize(
+    ("step", "expected"),
+    [
+        ("metadata", "starting"),
+        ("download duration=3600s chunks=12", "downloading · about 5 min left"),
+        ("transcribing chunk 1/12", "transcribing 1/12 · about 4 min left"),
+        ("transcribing chunk 3/12", "transcribing 3/12 · about 4 min left"),
+        ("transcribing chunk 12/12", "transcribing 12/12 · about 1 min left"),
+        ("saving", "saving · about 1 min left"),
+        ("writing essay", "writing essay · about 1 min left"),
+        ("embedding", "embedding · under a minute left"),
+        ("done", "done"),
+        ("download duration=300s chunks=0", None),
+        ("transcribing chunk 0/12", None),
+        ("transcribing chunk 13/12", None),
+        ("transcribing chunk 1/?", None),
+    ],
+)
+def test_format_progress(step: str, expected: str | None) -> None:
+    """Use remaining chunks and downstream stages to estimate time left."""
+    assert format_progress(step) == expected
+
+
+def test_read_progress_uses_the_latest_complete_record(tmp_path: Path) -> None:
+    """Ignore diagnostics, malformed records and a record still being written."""
+    log = tmp_path / "video.log"
+    assert read_progress(log) == "starting"
+    log.write_bytes(b"PROGRESS downloading")
+    assert read_progress(log) == "starting"
+    log.write_bytes(
+        b"PROGRESS download duration=720s chunks=3\n"
+        b"PROGRESS transcribing chunk 2/3\r\n"
+        b"diagnostics\xff: PROGRESS done\nPROGRESS unknown\nPROGRESS saving"
+    )
+    assert read_progress(log) == "transcribing 2/3 · about 2 min left"
+    with log.open("ab") as output:
+        output.write(b"\n")
+    assert read_progress(log) == "saving · about 1 min left"
+
+
+def test_read_progress_reads_only_the_tail(tmp_path: Path) -> None:
+    """Skip old records outside the tail and a diagnostic cut through its middle."""
+    log = tmp_path / "video.log"
+    record = b"PROGRESS saving\n"
+    tail = record + b"x" * (PROGRESS_TAIL_BYTES - len(record))
+    log.write_bytes(b"PROGRESS done\nprefix " + tail)
+    assert read_progress(log) == "starting"
+    log.write_bytes(b"prefix\n" + tail)
+    assert read_progress(log) == "saving · about 1 min left"
 
 
 @pytest.mark.parametrize(

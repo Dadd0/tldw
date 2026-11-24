@@ -1,6 +1,7 @@
 """One function per stage, each for one video: transcribe, write the essay, embed."""
 
 import tempfile
+from math import ceil
 from pathlib import Path
 
 from tldw.audio import CHUNK_SECONDS, download_mp3, fetch_metadata, split_mp3
@@ -22,6 +23,11 @@ from tldw.transcription import transcribe
 MIN_DURATION_SECONDS = 180
 
 
+def progress(step: str) -> None:
+    """Write a complete progress record for the submission page."""
+    print(f"PROGRESS {step}", flush=True)
+
+
 def transcribe_video(
     video: str,
     settings: dict,
@@ -35,6 +41,8 @@ def transcribe_video(
         raise StageError(CONFIG, "usage", "--max-minutes must be a positive integer")
 
     max_seconds = None if max_minutes is None else max_minutes * 60
+    if max_seconds is None:
+        progress("metadata")
     metadata = fetch_metadata(video)
     if (
         max_seconds is None
@@ -49,11 +57,20 @@ def transcribe_video(
         return None
 
     with tempfile.TemporaryDirectory() as directory:
+        if max_seconds is None:
+            duration = metadata["duration_seconds"]
+            progress(
+                f"download duration={duration}s chunks={ceil(duration / CHUNK_SECONDS)}"
+            )
         mp3 = download_mp3(metadata["video_id"], Path(directory))
-        words_by_chunk = [
-            transcribe(chunk, settings["OPENROUTER_API_KEY"], language=language)
-            for chunk in split_mp3(mp3, max_seconds=max_seconds)
-        ]
+        chunks = split_mp3(mp3, max_seconds=max_seconds)
+        words_by_chunk = []
+        for i, chunk in enumerate(chunks, start=1):
+            if max_seconds is None:
+                progress(f"transcribing chunk {i}/{len(chunks)}")
+            words_by_chunk.append(
+                transcribe(chunk, settings["OPENROUTER_API_KEY"], language=language)
+            )
 
     segments = build_segments(words_by_chunk, CHUNK_SECONDS)
     if not segments:
@@ -67,6 +84,7 @@ def transcribe_video(
             )
         return None
 
+    progress("saving")
     upsert_video(
         settings["SUPABASE_DB_URL"],
         metadata | {"status": "transcribed"},
@@ -130,9 +148,12 @@ def process_video(
     if video_id is None:
         return
     try:
+        progress("writing essay")
         write_essay(video_id, settings, replace=False)
+        progress("embedding")
         embed_video(video_id, settings)
     except StageError:
         # A video that cannot be read and searched is not kept half-processed.
         delete_video(settings["SUPABASE_DB_URL"], video_id)
         raise
+    progress("done")

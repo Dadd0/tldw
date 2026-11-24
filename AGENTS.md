@@ -165,7 +165,7 @@ So a newly added channel gets exactly its latest video, an outage is caught up f
 
 ### Stage 1: transcribe
 
-All files live in a temporary directory that is removed when the video finishes.
+Downloaded audio and chunks live in a temporary directory that is removed when the video finishes. A full `transcribe` run flushes a `PROGRESS` line to stdout at metadata lookup, download (duration and expected chunk count), each transcription chunk (current/total), saving, essay writing, embedding, and completion. A `--max-minutes` preview prints only its timestamped segments.
 
 1. **Metadata.** Ask yt-dlp for the video's ID, channel ID, channel name, title, duration and publish time, without downloading.
 2. **Duration filter (poll only).** Under 180 seconds: store a row with status `skipped` and stop. This drops Shorts, which can be up to 3 minutes long, without re-checking them on every poll. There is no upper limit; a 4-hour video is transcribed.
@@ -300,7 +300,9 @@ The title links to the essay page. Reading time is the essay's word count divide
 
 **`/essay/{video_id}`** shows the essay title, the same line of details, and the body rendered with `MarkdownIt("commonmark", {"html": False})`. The option matters: without it, markdown-it-py passes raw HTML in the essay straight into the page.
 
-**`/submit`** accepts an 11-character video ID or a YouTube watch, youtu.be, shorts or live URL. A same-origin form POST on the loopback site starts `uv run main.py transcribe <video>` in a detached process from the project root and redirects to a confirmation page. Its output and errors append to the git-ignored `transcribe.log`. Submitting a stored video again replaces its transcript and essay, just as the CLI does.
+**`/submit`** accepts an 11-character video ID or a YouTube watch, youtu.be, shorts or live URL. A same-origin form POST on the loopback site starts `uv run main.py transcribe <video>` in a detached process from the project root and redirects to a confirmation page. Each run replaces the git-ignored `logs/<video_id>.log` with its output and errors. Submitting a stored video again replaces its transcript and essay, just as the CLI does.
+
+While a submitted video has no essay, the front page shows its latest logged step and rough time left. The page refreshes every 15 seconds while a row is processing. A failed row links to its log for a day. Restarting the site clears the in-memory submission list.
 
 **`/ask`** shows the chat in the main area, beside a sidebar that lists the saved chats newest first, opens the one clicked, and starts an empty one with **new chat**. Chats are kept in `localStorage` under one key, `tldw.chats`, so they survive browser restarts and every tab sees them. The key holds the ID of the current chat and the list of chats, each with an ID, a title taken from its first question, the time of its last answer and its turns. The essay panel shows the current chat, so one chat can continue on either page. There is no context selector: a question sent from an essay's panel is about that essay, and a question sent from `/ask` or from the panel on the home page searches everything. A retry uses the page it is sent from. A chat with no answers is dropped once another chat is used; other chats are never deleted. Read and Ask are separate server-rendered pages joined by plain links; `chat.js` handles only the chat. Leaving a page or opening another chat cancels a reply that is still in flight, and the question is kept ready to retry. **Back to Read** links to the last Read page visited, or to the home page.
 
