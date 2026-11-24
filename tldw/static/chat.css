@@ -69,8 +69,20 @@
   font: 10pt Verdana, Geneva, sans-serif;
   font-size: max(10pt, 16px);
 }
-#chat-status { color: #828282; font-size: 8pt; }
-#chat-spinner {
+.chat-waiting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 8px;
+  color: #828282;
+  font-size: 8pt;
+}
+/* Once streamed text arrives, the answer replaces the waiting row. */
+.chat-log:has(.chat-answer[aria-busy="true"]:not(:empty)) .chat-waiting { display: none; }
+.submissions { color: #828282; list-style: none; }
+.submissions li { position: relative; }
+.submission-spinner { position: absolute; inset-inline-start: -1.4em; top: .2em; }
+#chat-spinner, .submission-spinner {
   box-sizing: border-box;
   width: 10px;
   height: 10px;
@@ -81,7 +93,7 @@
 }
 @keyframes chat-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
-  #chat-spinner { animation: none; }
+  #chat-spinner, .submission-spinner { animation: none; }
 }
 
 /* HN-style controls: flat, square, small Verdana */

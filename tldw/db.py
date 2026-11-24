@@ -223,6 +223,16 @@ def get_essay(db_url: str, video_id: str) -> dict | None:
     return rows[0] if rows else None
 
 
+def existing_essay_ids(db_url: str, video_ids: list[str]) -> set[str]:
+    """Return submitted video IDs with an essay, regardless of its front-page rank."""
+    rows = query(
+        db_url,
+        "SELECT video_id FROM essays WHERE video_id = ANY(%(video_ids)s)",
+        {"video_ids": video_ids},
+    )
+    return {row["video_id"] for row in rows}
+
+
 def pending_embedding_video_ids(db_url: str) -> list[str]:
     """Return the IDs of videos with segments of 20 words or more that have no vector."""
     rows = query(

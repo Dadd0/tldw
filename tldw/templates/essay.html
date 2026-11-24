@@ -3,6 +3,15 @@
 {% block title %}{{ essay.title }} · TL;DW{% endblock %}
 
 {% block content %}
+  {% if toc %}
+  <nav class="toc" aria-label="Contents">
+    <ol>
+      {% for section in toc %}
+      <li><a href="#{{ section.id }}">{{ section.text }}</a></li>
+      {% endfor %}
+    </ol>
+  </nav>
+  {% endif %}
   <article data-video-id="{{ essay.video_id }}" data-essay-title="{{ essay.title }}">
     <header>
       <h1>{{ essay.title }}</h1>

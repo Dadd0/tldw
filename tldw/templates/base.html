@@ -13,6 +13,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% if processing %}<meta http-equiv="refresh" content="15">{% endif %}
   <title>{% block title %}TL;DW{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', path='chat.css').path }}">
   {% if mode != "submit" %}
@@ -57,7 +58,46 @@
     .essay-body a { text-decoration: underline; }
     .essay-body img { max-width: 100%; }
     .essay-body pre { overflow-x: auto; }
+    .toc { display: none; color: #828282; font-size: 9pt; line-height: 1.45; }
+    .toc ol { margin: 0; padding: 0; list-style: none; }
+    .toc li { margin-bottom: 10px; }
+    .toc a { display: block; color: #555; }
+    .toc a::before { content: counter(list-item) "."; display: inline-block; width: 2em; text-indent: 0; color: #828282; }
     @media (max-width: 750px) { .page { width: 100%; margin-top: 0; } }
+    /* Contents column only when there is room beside the essay and the chat panel is closed. */
+    @media (min-width: 751px) {
+      #workspace:not(.panel-open) #read-view:has(> .toc) {
+        display: grid;
+        grid-template-columns: 2em minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+      }
+      /* A viewport-tall sticky column keeps the list centered on screen while scrolling. */
+      #workspace:not(.panel-open) .toc {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100dvh;
+      }
+      /* Collapsed to its numbers; hovering or tabbing in shows the titles over the essay. */
+      #workspace:not(.panel-open) .toc a { font-size: 0; }
+      #workspace:not(.panel-open) .toc a::before { font-size: 9pt; }
+      #workspace:not(.panel-open) .toc ol:is(:hover, :focus-within) {
+        width: 16em;
+        margin-left: -8px;
+        padding: 8px 12px 0 8px;
+        border: 1px solid #e0e0d6;
+        background: #f6f6ef;
+      }
+      #workspace:not(.panel-open) .toc ol:is(:hover, :focus-within) a {
+        padding-left: 2em;
+        text-indent: -2em;
+        font-size: 9pt;
+      }
+    }
   </style>
 </head>
 <body>

@@ -2,13 +2,15 @@
 
 import re
 import subprocess
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from math import ceil
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import requests
 from markdown_it import MarkdownIt
 from starlette.applications import Starlette
+from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import QueryParams
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
@@ -19,7 +21,7 @@ from starlette.templating import Jinja2Templates
 
 from tldw.answering import build_ask
 from tldw.config import load_settings
-from tldw.db import get_essay, list_essays
+from tldw.db import existing_essay_ids, get_essay, list_essays
 
 PAGE_SIZE = 30
 VIDEO_ID = re.compile(r"[A-Za-z0-9_-]{11}")
@@ -54,11 +56,30 @@ def submitted_video_id(value: str) -> str | None:
     return candidate if VIDEO_ID.fullmatch(candidate) else None
 
 
-def start_transcription(video_id: str, project_dir: Path) -> None:
+def submission_title(video_id: str) -> str:
+    """Look up the public title with a short timeout, falling back to the video ID."""
+    try:
+        response = requests.get(
+            "https://www.youtube.com/oembed",
+            params={
+                "url": f"https://www.youtube.com/watch?v={video_id}",
+                "format": "json",
+            },
+            timeout=0.75,
+        )
+        response.raise_for_status()
+        data = response.json()
+    except requests.RequestException:
+        return video_id
+    title = data.get("title") if isinstance(data, dict) else None
+    return title.strip() if isinstance(title, str) and title.strip() else video_id
+
+
+def start_transcription(video_id: str, project_dir: Path) -> subprocess.Popen:
     """Start the CLI in its own session and append both output streams to the log."""
     video = f"https://www.youtube.com/watch?v={video_id}"
     with (project_dir / "transcribe.log").open("ab") as log:
-        subprocess.Popen(
+        return subprocess.Popen(
             ["uv", "run", "main.py", "transcribe", video],
             cwd=project_dir,
             stdin=subprocess.DEVNULL,
@@ -66,6 +87,33 @@ def start_transcription(video_id: str, project_dir: Path) -> None:
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
+
+
+def submission_rows(
+    submissions: dict, published: set[str], now: datetime
+) -> list[dict]:
+    """Return unpublished submissions newest first and discard finished entries."""
+    rows = []
+    for video_id, entry in list(submissions.items()):
+        code = entry["process"].poll()
+        if code is not None:
+            if (
+                code == 0
+                or video_id in published
+                or now - entry.setdefault("failed_at", now) >= timedelta(days=1)
+            ):
+                del submissions[video_id]
+                continue
+        if video_id not in published:
+            rows.append(
+                {
+                    "video_id": video_id,
+                    "title": entry["title"],
+                    "submitted_at": entry["submitted_at"],
+                    "processing": code is None,
+                }
+            )
+    return sorted(rows, key=lambda row: row["submitted_at"], reverse=True)
 
 
 def reading_time(body: str) -> int:
@@ -94,6 +142,27 @@ def format_age(date: datetime, now: datetime) -> str:
     return "just now"
 
 
+def render_essay(markdown: MarkdownIt, body: str) -> tuple[str, list[dict]]:
+    """Render an essay body with an id on each h2 and return its table of contents."""
+    tokens = markdown.parse(body)
+    toc = []
+    for heading, inline in zip(tokens, tokens[1:]):
+        if heading.type != "heading_open" or heading.tag != "h2":
+            continue
+        text = "".join(
+            t.content for t in inline.children if t.type in ("text", "code_inline")
+        )
+        # The prefix keeps headings from taking page ids such as "chat".
+        base = "section-" + (re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "x")
+        slug, n = base, 1
+        while any(row["id"] == slug for row in toc):
+            n += 1
+            slug = f"{base}-{n}"
+        heading.attrSet("id", slug)
+        toc.append({"id": slug, "text": text.strip()})
+    return markdown.renderer.render(tokens, markdown.options, {}), toc
+
+
 def build_site() -> Starlette:
     """Build the essay site using the project's settings."""
     settings = load_settings()
@@ -106,8 +175,10 @@ def build_site() -> Starlette:
         format_duration=format_duration,
         format_age=format_age,
     )
+    # shortcut: forgotten on restart, persist submissions if they must survive a site restart.
+    submissions: dict[str, dict] = {}
 
-    def index(request: Request) -> Response:
+    async def index(request: Request) -> Response:
         """Render one page of essays."""
         try:
             page = int(request.query_params.get("p", "1"))
@@ -118,15 +189,29 @@ def build_site() -> Starlette:
         if not 0 <= offset < 2**63:
             raise HTTPException(404)
 
-        essays = list_essays(db_url, limit=PAGE_SIZE + 1, offset=offset)
+        pending = []
+        now = datetime.now(UTC)
+        if page == 1 and submissions:
+            published = await run_in_threadpool(
+                existing_essay_ids, db_url, list(submissions)
+            )
+            pending = submission_rows(submissions, published, now)
+        essays = await run_in_threadpool(
+            list_essays, db_url, limit=PAGE_SIZE + 1, offset=offset
+        )
+        # An essay may have been published between the two reads.
+        listed_ids = {essay["video_id"] for essay in essays}
+        pending = [row for row in pending if row["video_id"] not in listed_ids]
         return templates.TemplateResponse(
             request,
             "index.html",
             {
+                "pending": pending,
+                "processing": any(row["processing"] for row in pending),
                 "essays": essays[:PAGE_SIZE],
                 "first_rank": offset + 1,
                 "next_page": page + 1 if len(essays) > PAGE_SIZE else None,
-                "now": datetime.now(UTC),
+                "now": now,
             },
         )
 
@@ -136,12 +221,14 @@ def build_site() -> Starlette:
         if essay is None:
             raise HTTPException(404)
 
+        body_html, toc = render_essay(markdown, essay["body"])
         return templates.TemplateResponse(
             request,
             "essay.html",
             {
                 "essay": essay,
-                "body_html": markdown.render(essay["body"]),
+                "body_html": body_html,
+                "toc": toc,
                 "now": datetime.now(UTC),
             },
         )
@@ -180,14 +267,22 @@ def build_site() -> Starlette:
                 video=value,
                 error="Enter a YouTube video URL or an 11-character video ID.",
             )
+        now = datetime.now(UTC)
+        submission_rows(submissions, set(), now)
+        entry = submissions.get(video_id)
+        if entry and entry["process"].poll() is None:
+            return RedirectResponse("/submit?started=1", status_code=303)
         try:
-            start_transcription(video_id, package_dir.parent)
+            process = start_transcription(video_id, package_dir.parent)
         except OSError:
             return page(
                 500,
                 video=value,
                 error="Couldn’t start transcription. Check that uv is available and transcribe.log is writable.",
             )
+        entry = {"process": process, "submitted_at": now, "title": video_id}
+        submissions[video_id] = entry
+        entry["title"] = await run_in_threadpool(submission_title, video_id)
         return RedirectResponse("/submit?started=1", status_code=303)
 
     return Starlette(

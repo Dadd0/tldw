@@ -14,6 +14,10 @@
   </header>
   <div class="chat-log" role="log" aria-label="Conversation" tabindex="0">
     <ol id="chat-turns"></ol>
+    <div class="chat-waiting">
+      <span id="chat-spinner" aria-hidden="true" hidden></span>
+      <span id="chat-status" role="status"></span>
+    </div>
   </div>
   <form id="chat-form">
     <label for="chat-question">Question</label>
@@ -21,8 +25,6 @@
     <div class="chat-submit">
       <button type="submit" id="send-question">Send</button>
       <button type="button" id="retry-question" hidden>Retry</button>
-      <span id="chat-spinner" aria-hidden="true" hidden></span>
-      <span id="chat-status" role="status"></span>
     </div>
   </form>
 </section>
