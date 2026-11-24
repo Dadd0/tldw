@@ -8,7 +8,12 @@ from urllib.parse import quote
 
 from markdown_it import MarkdownIt
 from pydantic_ai import Agent, ModelSettings, RunContext
-from pydantic_ai.exceptions import AgentRunError, ToolFailedError, UserError
+from pydantic_ai.exceptions import (
+    AgentRunError,
+    ModelRateLimitError,
+    ToolFailedError,
+    UserError,
+)
 from pydantic_ai.messages import (
     ModelMessage,
     ModelRequest,
@@ -209,6 +214,12 @@ def build_ask(settings: dict[str, str]) -> Callable[[Request], Awaitable[Respons
                 question,
                 deps={"video_id": video_id, "citations": citations},
                 message_history=history,
+            )
+        except ModelRateLimitError:
+            logger.warning("Ask rate-limited by OpenRouter")
+            return JSONResponse(
+                {"error": "OpenRouter reached a rate limit for chat. Try again later."},
+                status_code=429,
             )
         except (AgentRunError, StageError, ToolFailedError, UserError) as error:
             logger.warning("Ask failed (%s)", type(error).__name__)
