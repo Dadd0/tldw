@@ -1,14 +1,18 @@
-"""Serve the private essay index and individual essays."""
+"""Serve the private essay site, chat, and video submission form."""
 
+import re
+import subprocess
 from datetime import UTC, datetime
 from math import ceil
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from markdown_it import MarkdownIt
 from starlette.applications import Starlette
+from starlette.datastructures import QueryParams
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import RedirectResponse, Response
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
@@ -18,6 +22,50 @@ from tldw.config import load_settings
 from tldw.db import get_essay, list_essays
 
 PAGE_SIZE = 30
+VIDEO_ID = re.compile(r"[A-Za-z0-9_-]{11}")
+
+
+def submitted_video_id(value: str) -> str | None:
+    """Extract one video ID from a bare ID or a supported YouTube video URL."""
+    value = value.strip()
+    if VIDEO_ID.fullmatch(value):
+        return value
+    if re.search(r"[\s\\\x00-\x1f\x7f]", value):
+        return None
+    try:
+        url = urlsplit(value)
+    except ValueError:
+        return None
+    if url.scheme not in {"http", "https"}:
+        return None
+    host = url.netloc.lower().removesuffix(":443" if url.scheme == "https" else ":80")
+    if host == "youtu.be":
+        candidate = url.path.removeprefix("/").removesuffix("/")
+    elif host in {"youtube.com", "www.youtube.com", "m.youtube.com"}:
+        if url.path == "/watch":
+            ids = QueryParams(url.query).getlist("v")
+            candidate = ids[0] if len(ids) == 1 else ""
+        elif url.path.startswith(("/shorts/", "/live/")):
+            candidate = url.path.split("/", 2)[2].removesuffix("/")
+        else:
+            return None
+    else:
+        return None
+    return candidate if VIDEO_ID.fullmatch(candidate) else None
+
+
+def start_transcription(video_id: str, project_dir: Path) -> None:
+    """Start the CLI in its own session and append both output streams to the log."""
+    video = f"https://www.youtube.com/watch?v={video_id}"
+    with (project_dir / "transcribe.log").open("ab") as log:
+        subprocess.Popen(
+            ["uv", "run", "main.py", "transcribe", video],
+            cwd=project_dir,
+            stdin=subprocess.DEVNULL,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
 
 
 def reading_time(body: str) -> int:
@@ -51,7 +99,7 @@ def build_site() -> Starlette:
     settings = load_settings()
     db_url = settings["SUPABASE_DB_URL"]
     markdown = MarkdownIt("commonmark", {"html": False})
-    package_dir = Path(__file__).parent
+    package_dir = Path(__file__).resolve().parent
     templates = Jinja2Templates(directory=package_dir / "templates")
     templates.env.filters.update(
         reading_time=reading_time,
@@ -102,11 +150,52 @@ def build_site() -> Starlette:
         """Render the full-page chat."""
         return templates.TemplateResponse(request, "ask.html", {"mode": "ask"})
 
+    async def submit(request: Request) -> Response:
+        """Show the submission form or start a video from a same-origin form POST."""
+
+        def page(status: int = 200, **fields: str | bool) -> Response:
+            """Render the form, its error, or the confirmation."""
+            return templates.TemplateResponse(
+                request, "submit.html", {"mode": "submit", **fields}, status_code=status
+            )
+
+        if request.method != "POST":
+            return page(started=request.query_params.get("started") == "1")
+        host = request.headers.get("host", "").lower()
+        if not re.fullmatch(
+            r"(?:localhost|127\.0\.0\.1|\[::1\])(?::[0-9]+)?", host
+        ) or (request.headers.get("origin") != f"{request.url.scheme}://{host}"):
+            return page(403, error="Submit videos from the form on this site.")
+        if (
+            request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+            != "application/x-www-form-urlencoded"
+        ):
+            return page(415, error="Send the video using the submission form.")
+        values = QueryParams(await request.body()).getlist("video")
+        value = values[0] if len(values) == 1 else ""
+        video_id = submitted_video_id(value)
+        if video_id is None:
+            return page(
+                400,
+                video=value,
+                error="Enter a YouTube video URL or an 11-character video ID.",
+            )
+        try:
+            start_transcription(video_id, package_dir.parent)
+        except OSError:
+            return page(
+                500,
+                video=value,
+                error="Couldn’t start transcription. Check that uv is available and transcribe.log is writable.",
+            )
+        return RedirectResponse("/submit?started=1", status_code=303)
+
     return Starlette(
         routes=[
             Route("/", index, name="index"),
             Route("/essay/{video_id}", essay_page, name="essay"),
             Route("/ask", ask_page, name="ask"),
+            Route("/submit", submit, methods=["GET", "POST"], name="submit"),
             Route("/api/ask", build_ask(settings), methods=["POST"]),
             Mount(
                 "/static", StaticFiles(directory=package_dir / "static"), name="static"
