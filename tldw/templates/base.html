@@ -76,6 +76,9 @@
     <div id="read-view"{% if mode == 'ask' %} hidden{% endif %}>
       {% block content %}{% endblock %}
     </div>
+    <div id="chat-divider" role="separator" tabindex="0" aria-label="Chat width"
+         aria-controls="chat" aria-orientation="vertical" aria-valuemin="32"
+         aria-valuemax="50" aria-valuenow="35" aria-valuetext="35%" hidden></div>
     {% include "chat.html" %}
   </main>
 </body>

@@ -11,13 +11,15 @@
   <form id="chat-form">
     <div class="chat-context">
       <label for="chat-scope">Context</label>
-      <select id="chat-scope" aria-describedby="chat-essay">
+      <select id="chat-scope" aria-describedby="chat-essay chat-selection">
         <option value="all">All Knowledge</option>
         <option value="essay" disabled>Current Essay</option>
+        <option value="selected" disabled>Selected Text</option>
       </select>
       <span id="chat-essay" hidden></span>
       <button type="button" data-ask-essay hidden>Ask about this essay</button>
     </div>
+    <blockquote id="chat-selection" hidden></blockquote>
     <label for="chat-question">Question</label>
     <textarea id="chat-question" rows="2" required></textarea>
     <div class="chat-submit">

@@ -46,6 +46,7 @@ Do not build any of these unless the owner asks:
 - The private front page lists saved essays and renders them as HTML. A local browser check passed with an essay stored in Supabase.
 - The private chat searches embedded transcript segments and links to essays and timestamped YouTube videos. A local browser check used the Apollo 11 transcript.
 - The site includes an essay chat panel and an Ask page that share one conversation per browser tab.
+- The essay panel supports questions about selected text and can be resized with a pointer or keyboard on wide screens.
 
 ## Tech stack
 
@@ -300,11 +301,13 @@ The title links to the essay page and "video" links to YouTube. Reading time is 
 
 **`/essay/{video_id}`** shows the essay title, the same line of details, and the body rendered with `MarkdownIt("commonmark", {"html": False})`. The option matters: without it, markdown-it-py passes raw HTML in the essay straight into the page.
 
+Selecting a passage in the essay body reveals **Ask about selected text**. The excerpt stays beside the question field after **Expand to Ask**. On wide screens, drag the divider or focus it and use Left and Right to resize the chat. Home and End set the minimum and maximum chat width.
+
 **`/ask`** shows the chat in the main area. The essay panel and Ask share the conversation and selected context in `sessionStorage`. Changing modes keeps an in-flight reply running. **Back to Read** restores the last essay and reading position, or opens the home page.
 
 ## Chat
 
-`answering.py` builds the agent using `CHAT_MODEL_ID`. The blog's `POST /api/ask` accepts a question, the selected context, and the completed turns. **Current Essay** filters by the associated video. **All Knowledge** searches all embedded segments, including videos without essays. When the user changes scope, earlier turns help resolve references and the new scope controls retrieval.
+`answering.py` builds the agent using `CHAT_MODEL_ID`. The blog's `POST /api/ask` accepts a question, the selected context, and the completed turns. **Current Essay** and **Selected Text** filter by the associated video. **Selected Text** also gives the agent the excerpt to interpret the question and guide its search. **All Knowledge** searches all embedded segments, including videos without essays. When the user changes scope, earlier turns help resolve references and the new scope controls retrieval.
 
 `search(query)` embeds the query and selects up to 8 nearest embedded segments by cosine distance within the selected scope. It returns the segment text, video title, channel name, optional essay title and URL, and the video URL at that moment (`https://www.youtube.com/watch?v={video_id}&t={start}s`, with `start` rounded down to a whole second). The standalone chat on `7932` uses `agent.to_web()` and searches only videos with essays.
 

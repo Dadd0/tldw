@@ -12,16 +12,24 @@
   text-underline-offset: .25em;
 }
 
-.essay-chat-actions:has(> :not([hidden])) {
+.essay-chat-actions {
   position: sticky;
   top: .5rem;
   z-index: 1;
   justify-content: flex-end;
+}
+.essay-chat-actions:has(> :not([hidden], [data-ask-selection])) {
   margin-top: .75rem;
+}
+.essay-chat-actions [data-ask-selection] {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-end: 0;
 }
 
 #workspace.panel-open { width: min(85rem, calc(100% - 2rem)); }
 #workspace[data-mode="ask"] { width: min(52rem, calc(100% - 2rem)); }
+#chat-divider { display: none; }
 
 #chat {
   box-sizing: border-box;
@@ -60,6 +68,17 @@
 }
 .chat-context { font-size: .9em; }
 #chat-essay { color: #55554b; overflow-wrap: anywhere; min-width: 0; }
+#chat-selection {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding-inline-start: .6rem;
+  border-inline-start: 2px solid #a54500;
+  color: #55554b;
+}
 #chat-question {
   box-sizing: border-box;
   width: 100%;
@@ -93,15 +112,27 @@
 @media (min-width: 56rem) {
   #workspace.panel-open {
     display: grid;
-    grid-template-columns: minmax(0, 65fr) minmax(0, 35fr);
+    grid-template-columns: minmax(0, 1fr) 1rem var(--chat-width, 35%);
     align-items: start;
-    gap: 1rem;
   }
-  #workspace.panel-open #chat {
+  #workspace.panel-open :is(#chat, #chat-divider) {
     position: sticky;
     top: .75rem;
     height: calc(var(--chat-viewport, 100dvh) - 1.5rem);
   }
+  #workspace.panel-open #chat-divider {
+    display: grid;
+    place-items: center;
+    cursor: col-resize;
+    touch-action: none;
+  }
+  #chat-divider::before {
+    content: "";
+    width: 2px;
+    height: 100%;
+    background: #77776b;
+  }
+  #chat-divider:is(:hover, :focus-visible)::before { background: #a54500; }
 }
 
 @media (max-width: 55.999rem) {
@@ -109,7 +140,7 @@
 }
 
 @media (max-height: 30rem) {
-  #workspace[data-mode="ask"] #chat, #workspace.panel-open #chat {
+  #workspace[data-mode="ask"] #chat, #workspace.panel-open :is(#chat, #chat-divider) {
     min-height: 12rem;
   }
 }
