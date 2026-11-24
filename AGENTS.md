@@ -149,7 +149,7 @@ Three stages. Each decides what to do from what is stored, so work that failed i
 `pipeline.py` has one function per stage, each taking one video. The commands call them like this:
 
 - `poll` takes a non-blocking exclusive lock on `.poll.lock` and exits 0 silently if another poll holds it. It then runs stage 1 for every new video of every channel, then stage 2 for every video the stage 2 query returns, then stage 3 likewise. Stages 2 and 3 look at the whole database, not only at the videos found in this poll.
-- `transcribe <video>` runs stages 1, 2 and 3 for that video, whether or not it is already stored.
+- `transcribe <video>` runs stages 1, 2 and 3 for that video, whether or not it is already stored. If stage 2 or 3 fails, it deletes the video with its segments and essay, so a failed run leaves nothing stored. The submit page uses this command. `poll` keeps a transcript whose essay or embedding failed, so the next poll retries those stages without paying for transcription again.
 - `write <video-id>` runs stage 2 for that video, replacing its essay. If the video is not stored with status `transcribed`, it prints an error and exits with code 2.
 
 ### Finding new videos

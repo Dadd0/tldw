@@ -59,14 +59,13 @@ def stored_video_ids(db_url: str, video_ids: list[str]) -> set[str]:
     return {row["video_id"] for row in rows}
 
 
-def get_video(db_url: str, video_id: str) -> dict | None:
-    """Return the stored row of a video keyed by column name, or None if it is not stored."""
-    rows = query(
+def delete_video(db_url: str, video_id: str) -> None:
+    """Remove a video together with its segments and essay."""
+    query(
         db_url,
-        "SELECT * FROM videos WHERE video_id = %(video_id)s",
+        "DELETE FROM videos WHERE video_id = %(video_id)s",
         {"video_id": video_id},
     )
-    return rows[0] if rows else None
 
 
 def upsert_video(db_url: str, video: dict, segments: list[dict]) -> None:

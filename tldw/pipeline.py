@@ -6,6 +6,7 @@ from pathlib import Path
 from tldw.audio import CHUNK_SECONDS, download_mp3, fetch_metadata, split_mp3
 from tldw.config import load_style
 from tldw.db import (
+    delete_video,
     get_essay_source,
     save_embeddings,
     save_essay,
@@ -126,6 +127,12 @@ def process_video(
         language=language,
         max_minutes=max_minutes,
     )
-    if video_id is not None:
+    if video_id is None:
+        return
+    try:
         write_essay(video_id, settings, replace=False)
         embed_video(video_id, settings)
+    except StageError:
+        # A video that cannot be read and searched is not kept half-processed.
+        delete_video(settings["SUPABASE_DB_URL"], video_id)
+        raise
