@@ -5,7 +5,8 @@
   {{ essay.body | reading_time }} min read |
   <time datetime="{{ essay.display_date.isoformat() }}">
     {{ essay.display_date | format_age(now) }}
-  </time>
+  </time> |
+  <a href="https://www.youtube.com/watch?v={{ essay.video_id | urlencode }}">video</a>
 </p>
 {%- endmacro -%}
 <!doctype html>
