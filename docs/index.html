@@ -560,6 +560,7 @@
               <ul class="result-points">
                 <li>One essay exceeded <strong>1,500 words</strong>. In another, a <strong>direct quote</strong> differed from the transcript.</li>
                 <li><strong>Manual reprocessing</strong> can remove an existing essay if indexing fails.</li>
+                <li><strong>Built for videos driven by speech.</strong> Audio-only analysis can miss details shown only on screen.</li>
               </ul>
             </article>
           </div>
@@ -569,6 +570,7 @@
       <aside class="notes">
         <p>The read-only snapshot on 25 November 2026 contained 19 essays covering 6 hours and 52 minutes of video, and 373 passages with embeddings and timestamps. All 19 essays were listed and rendered by the local site. Sanfilippo's 37-minute-and-29-second video on GLM 5.4 produced a 1,266-word essay, estimated at six minutes to read. The database counts describe the saved library.</p>
         <p>One essay exceeded the 1,500-word limit in the style guide. A separate essay presented wording edited from its transcript as a direct quote. In a local simulation, an indexing error during manual reprocessing triggered the code path that deletes the processed video and its essay. A simulated scheduled poll retried the pending indexing step without rerunning transcription or essay generation. No live database rows were changed during these checks.</p>
+        <p>TL;DW is designed for talks, interviews and other videos that communicate mainly through speech. The essay and chat use the audio transcript. If a diagram, slide or on-screen demonstration contains information the speaker never explains, that information can be missing from the essay and unavailable as a source for the chat.</p>
       </aside>
     </section>
   </div>
