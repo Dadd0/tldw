@@ -1165,6 +1165,10 @@
   font: 500 var(--text-small) / 1.35 var(--font-body);
 }
 
+.reveal .course-line {
+  margin-block-start: calc(var(--u) * 0.5);
+}
+
 /*
  * Framework logos. The brand colors live in the SVG files; the pill gives every mark
  * the same near-white ground and a keyline so it sits cleanly on paper, stone or teal.
