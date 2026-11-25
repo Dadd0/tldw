@@ -1,0 +1,2877 @@
+/*
+ * TL;DW presentation theme for Reveal.js 6.
+ *
+ * Load order: reset.css, reveal.css, the web fonts, then this file.
+ * The token graph, contrast audit and class contract are in ../DESIGN_TOKENS.md.
+ *
+ * Colors flow one way: reference tokens (:root, OKLCH) -> semantic tokens -> components.
+ * Raw color values appear only in the reference block. Components use semantic tokens.
+ *
+ * Layout classes go on a <div class="slide ..."> inside each <section>, never on the
+ * <section> itself: Reveal sets the section's display inline and forces it in print.
+ */
+
+/* ---------------------------------------------------------------- 1. Tokens */
+
+:root {
+  /* Reference: warm paper and ink. Each value is inside the sRGB gamut. */
+  --ref-paper-0: oklch(99% 0.004 100);             /* #fcfcf9 */
+  --ref-paper-100: oklch(97.12% 0.0092 106.57);    /* #f6f6ef  anchor */
+  --ref-paper-200: oklch(93.58% 0.0135 97.45);     /* #eceae0  anchor */
+  --ref-paper-300: oklch(88% 0.014 97);            /* #dad8cd */
+  --ref-paper-400: oklch(72% 0.012 90);            /* #a7a49c */
+  --ref-paper-500: oklch(60% 0.012 85);            /* #838078 */
+  --ref-ink-500: oklch(50% 0.01 75);               /* #67635d */
+  --ref-ink-700: oklch(44.44% 0.0096 73.64);       /* #57534e  anchor */
+  --ref-ink-800: oklch(28% 0.008 60);              /* #2c2825 */
+  --ref-ink-900: oklch(21.61% 0.0061 56.04);       /* #1c1917  anchor */
+
+  /* Reference: vermilion (brand) and teal (agents). */
+  --ref-vermilion-100: oklch(94% 0.032 55);        /* #fde6d7 */
+  --ref-vermilion-300: oklch(78% 0.135 50);        /* #fc9c64 */
+  --ref-vermilion-500: oklch(69.58% 0.2042 43.49); /* #ff6600  anchor */
+  --ref-vermilion-700: oklch(50% 0.155 40);        /* #a83903 */
+  --ref-teal-100: oklch(94% 0.03 186);             /* #d6f2ee */
+  --ref-teal-300: oklch(80% 0.09 186);             /* #75d1c6 */
+  --ref-teal-600: oklch(51.09% 0.0861 186.39);     /* #0f766e  anchor */
+  --ref-teal-700: oklch(44% 0.075 186);            /* #076059 */
+
+  /* Semantic: surfaces */
+  --surface-canvas: var(--ref-paper-100);
+  --surface-elevated: var(--ref-paper-200);
+  --surface-sheet: var(--ref-paper-0);
+  --surface-code: var(--ref-ink-900);
+  --surface-code-raised: var(--ref-ink-800);
+
+  /* Semantic: ink */
+  --ink-primary: var(--ref-ink-900);
+  --ink-secondary: var(--ref-ink-700);
+  --ink-tertiary: var(--ref-ink-500);
+  --ink-on-code: var(--ref-paper-200);
+  --ink-on-code-muted: var(--ref-paper-400);
+
+  /* Semantic: vermilion. The 500 step is for bars, rules and fills, never for text on paper. */
+  --accent-primary: var(--ref-vermilion-500);
+  --accent-primary-ink: var(--ref-vermilion-700);
+  --accent-primary-soft: var(--ref-vermilion-100);
+  --accent-primary-bright: var(--ref-vermilion-300);
+  --on-accent-primary: var(--ref-ink-900);
+
+  /* Semantic: teal */
+  --accent-agent: var(--ref-teal-600);
+  --accent-agent-ink: var(--ref-teal-700);
+  --accent-agent-soft: var(--ref-teal-100);
+  --accent-agent-bright: var(--ref-teal-300);
+  --on-accent-agent: var(--ref-paper-0);
+
+  /* Semantic: lines */
+  --border-subtle: var(--ref-paper-300);
+  --border-strong: var(--ref-paper-500);
+  --focus-ring: var(--accent-agent-ink);
+
+  /* Typefaces */
+  --font-display: "Newsreader", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --font-mockup: Verdana, Geneva, "DejaVu Sans", sans-serif;
+
+  /* Reveal's own chrome sits outside the scaled slide, so it is sized against the window. */
+  --chrome-bar: clamp(4px, 0.6vmin, 8px);
+  --chrome-text: clamp(11px, 1.5vmin, 15px);
+}
+
+/* ------------------------------------------------- 2. Reveal base and chrome */
+
+.reveal-viewport {
+  /* Reveal's core outlines the current slide in overview mode with this variable. */
+  --r-link-color: var(--accent-primary);
+  background-color: var(--surface-canvas);
+  color: var(--ink-primary);
+}
+
+.reveal {
+  /*
+   * Type scale: ratio 1.2 on a 26px body at the 1280px design width.
+   * --sw is 1% of the slide's design width, which Reveal publishes as --slide-width on the
+   * viewport element. The scale follows the slide; Reveal's own scaling follows the window.
+   * Viewport units would scale twice. The px bounds keep text legible at other design widths.
+   * These tokens live here, not on :root, because --slide-width is set below :root.
+   */
+  --sw: calc(var(--slide-width, 1280px) / 100);
+  --text-micro: clamp(16px, calc(var(--sw) * 1.41), 21px);   /* 18px: kickers, labels, meta */
+  --text-small: clamp(19px, calc(var(--sw) * 1.72), 26px);   /* 22px: captions, card notes */
+  --text-code: clamp(18px, calc(var(--sw) * 1.64), 25px);    /* 21px */
+  --text-body: clamp(22px, calc(var(--sw) * 2.03), 31px);    /* 26px */
+  --text-lead: clamp(26px, calc(var(--sw) * 2.42), 37px);    /* 31px */
+  --text-h3: clamp(31px, calc(var(--sw) * 2.89), 44px);      /* 37px */
+  --text-h2: clamp(44px, calc(var(--sw) * 4.22), 64px);      /* 54px: slide headline */
+  --text-metric: clamp(52px, calc(var(--sw) * 5), 76px);     /* 64px */
+  --text-display: clamp(62px, calc(var(--sw) * 6.1), 92px);  /* 78px: title and closing */
+
+  /* Space: one fluid unit, 8px at the design width. */
+  --u: clamp(6.5px, calc(var(--sw) * 0.625), 9.5px);
+  --slide-pad-block: calc(var(--u) * 7);
+  --slide-pad-inline: calc(var(--u) * 9);
+  --rule: calc(var(--u) * 0.5);
+  --edge: 1px;  /* diagram lines: arrows, edges, rules */
+  --radius: 3px;
+  --logo-size: clamp(18px, calc(var(--sw) * 1.56), 22px);  /* 20px: in badges */
+  --logo-size-large: clamp(24px, calc(var(--sw) * 2.19), 32px);  /* 28px: bare, in a node */
+  --shadow-sheet: calc(var(--u) * 0.75) calc(var(--u) * 0.75) 0 var(--border-subtle);
+
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--ink-primary);
+  font-kerning: normal;
+  font-synthesis: none;
+}
+
+.reveal ::selection {
+  background: var(--accent-primary-soft);
+  color: var(--ink-primary);
+}
+
+/* The orange bar from the top of every TL;DW page. */
+.reveal::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 12;
+  block-size: var(--chrome-bar);
+  background: var(--accent-primary);
+  pointer-events: none;
+}
+
+.reveal .progress {
+  block-size: var(--chrome-bar);
+  background: var(--border-subtle);
+  color: var(--ink-primary);
+}
+
+.reveal .controls {
+  color: var(--ink-secondary);
+}
+
+/* Bottom left, so it never sits under the navigation arrows. */
+.reveal .slide-number {
+  inset: auto auto calc(var(--chrome-bar) + 6px) 12px;
+  padding: 0.4em 0.6em;
+  background: transparent;
+  color: var(--ink-secondary);
+  font: 500 var(--chrome-text) / 1 var(--font-mono);
+}
+
+.reveal .slide-number a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ------------------------------------------------ 3. Slide frame and layouts */
+
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal .slides section {
+  box-sizing: border-box;
+  block-size: 100%;
+  padding: 0;
+}
+
+.reveal .slide {
+  box-sizing: border-box;
+  block-size: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 4);
+  padding: var(--slide-pad-block) var(--slide-pad-inline);
+}
+
+.reveal .slide-header {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1.5);
+}
+
+.reveal .slide-body {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: calc(var(--u) * 4);
+}
+
+.reveal .slide-copy {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 3);
+  min-inline-size: 0;
+}
+
+.reveal .slide-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--u) * 3);
+  color: var(--ink-tertiary);
+  font: 400 var(--text-micro) / 1.3 var(--font-mono);
+}
+
+/*
+ * Copy beside a visual: exactly two children, copy first in the source.
+ * --split-copy and --split-visual set the column ratio and can be overridden inline.
+ */
+.reveal :is(.slide-split, .slide-hero, .split-loop) > .slide-body,
+.reveal .split-row {
+  display: grid;
+  grid-template-columns: minmax(0, var(--split-copy, 5fr)) minmax(0, var(--split-visual, 6fr));
+  grid-template-rows: minmax(0, 1fr);
+  align-items: center;
+  gap: calc(var(--u) * 6);
+}
+
+.reveal .is-even {
+  --split-copy: 1fr;
+  --split-visual: 1fr;
+}
+
+/* Visual on the left, copy still first for screen readers. */
+.reveal :is(.slide-split, .slide-hero, .split-loop).is-reversed > .slide-body,
+.reveal .split-row.is-reversed {
+  grid-template-columns: minmax(0, var(--split-visual, 6fr)) minmax(0, var(--split-copy, 5fr));
+}
+
+.reveal :is(.slide-split, .slide-hero, .split-loop).is-reversed > .slide-body > :first-child,
+.reveal .split-row.is-reversed > :first-child {
+  order: 2;
+}
+
+.reveal .slide-hero {
+  --split-copy: 6fr;
+  --split-visual: 7fr;
+}
+
+/* The hero art runs off the outer edge of the slide and fades in from the copy side. */
+.reveal .slide-hero .visual-frame.is-bleed {
+  margin-inline-end: calc(var(--slide-pad-inline) * -1);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%);
+  mask-image: linear-gradient(to right, transparent, black 12%);
+}
+
+.reveal .slide-hero.is-reversed .visual-frame.is-bleed {
+  margin-inline: calc(var(--slide-pad-inline) * -1) 0;
+  -webkit-mask-image: linear-gradient(to left, transparent, black 12%);
+  mask-image: linear-gradient(to left, transparent, black 12%);
+}
+
+/* Closing: a centred statement over a command block. */
+.reveal .slide-closing > .slide-body {
+  align-items: center;
+  text-align: center;
+}
+
+.reveal .slide-closing h2 {
+  max-inline-size: 20ch;
+  font-size: var(--text-display);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.reveal .slide-closing :is(.kicker, .slide-footer) {
+  justify-content: center;
+}
+
+.reveal .slide-closing .code-card {
+  max-inline-size: 100%;
+  text-align: left;
+}
+
+/* --------------------------------------------------------------- 4. Type */
+
+.reveal :is(h1, h2, h3, h4, p, figure, blockquote, pre, table) {
+  margin: 0;
+}
+
+.reveal :is(h1, h2, h3) {
+  color: var(--ink-primary);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-variant-numeric: lining-nums;
+  text-wrap: balance;
+}
+
+.reveal h1 {
+  font-size: var(--text-display);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.reveal h2 {
+  max-inline-size: 30ch;
+  font-size: var(--text-h2);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+}
+
+.reveal h3 {
+  font-size: var(--text-h3);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.reveal h4 {
+  font-size: var(--text-body);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/*
+ * ch is the width of the zero, which is wide in IBM Plex Sans: 65ch measured 89 to 95
+ * characters a line. 52ch measures 70 to 74, inside the 45 to 75 range the cap is for.
+ */
+.reveal p {
+  max-inline-size: 52ch;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+.reveal .lead {
+  max-inline-size: 46ch;
+  color: var(--ink-secondary);
+  font-size: var(--text-lead);
+  line-height: 1.35;
+}
+
+.reveal strong,
+.reveal b {
+  font-weight: 600;
+}
+
+/* No italic is loaded. Emphasis is a change of ink, and links keep the underline. */
+.reveal em {
+  color: var(--accent-primary-ink);
+  font-style: normal;
+}
+
+.reveal small {
+  color: var(--ink-secondary);
+  font-size: var(--text-small);
+}
+
+.reveal mark {
+  padding: 0 0.15em;
+  background: var(--accent-primary-soft);
+  color: var(--ink-primary);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.reveal a {
+  color: var(--accent-primary-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+.reveal a:hover {
+  text-decoration-thickness: 0.14em;
+}
+
+.reveal a:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.reveal ul,
+.reveal ol {
+  margin: 0;
+  padding-inline-start: 1.15em;
+}
+
+.reveal ul {
+  list-style: square;
+}
+
+.reveal ol {
+  padding-inline-start: 1.6em;
+  list-style: decimal;
+}
+
+.reveal li {
+  max-inline-size: 52ch;
+  padding-inline-start: 0.2em;
+}
+
+.reveal li + li {
+  margin-block-start: 0.45em;
+}
+
+.reveal ul > li::marker {
+  color: var(--accent-primary);
+}
+
+.reveal ol > li::marker {
+  color: var(--ink-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.reveal blockquote {
+  max-inline-size: 34ch;
+  padding-inline-start: calc(var(--u) * 3);
+  border-inline-start: var(--rule) solid var(--accent-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: 500;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+/* Small mono label above a headline, led by a short piece of the orange bar. */
+.reveal .kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  color: var(--ink-secondary);
+  font: 500 var(--text-micro) / 1.3 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reveal .kicker::before {
+  content: "";
+  flex: none;
+  inline-size: 1.6em;
+  block-size: 0.4em;
+  background: var(--accent-primary);
+}
+
+/* An arrow drawn in CSS: the web font subsets carry no arrow glyph. */
+.reveal .arrow {
+  position: relative;
+  display: inline-block;
+  inline-size: 1.5em;
+  block-size: 0.6em;
+  margin-inline: 0.25em;
+  color: var(--accent-primary-ink);
+  vertical-align: middle;
+}
+
+.reveal .arrow::before {
+  content: "";
+  position: absolute;
+  inset: calc(50% - 0.04em) 0.06em auto 0;
+  block-size: 0.08em;
+  background: currentColor;
+}
+
+.reveal .arrow::after {
+  content: "";
+  position: absolute;
+  inset: 50% 0.04em auto auto;
+  box-sizing: border-box;
+  inline-size: 0.36em;
+  block-size: 0.36em;
+  border-block-start: 0.08em solid;
+  border-inline-end: 0.08em solid;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* --------------------------------------------------------- 5. Components */
+
+/* Tag pill */
+.reveal .tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--u);
+}
+
+.reveal .tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45em 0.85em;
+  border: 1px solid var(--border-strong);
+  border-radius: 99em;
+  color: var(--ink-secondary);
+  font: 500 var(--text-micro) / 1 var(--font-mono);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.reveal a.tag-pill:hover {
+  text-decoration: underline;
+}
+
+/* A play triangle before a timestamp. */
+.reveal .tag-pill.is-timestamp::before {
+  content: "";
+  margin-inline-end: 0.5em;
+  border-block: 0.32em solid transparent;
+  border-inline-start: 0.5em solid currentColor;
+}
+
+.reveal :is(.tag-pill, .visual-label, .segment).is-accent {
+  border-color: var(--accent-primary-ink);
+  background: var(--accent-primary-soft);
+  color: var(--accent-primary-ink);
+}
+
+.reveal :is(.tag-pill, .visual-label, .segment).is-agent {
+  border-color: var(--accent-agent-ink);
+  background: var(--accent-agent-soft);
+  color: var(--accent-agent-ink);
+}
+
+/* Editorial card, metric card and flow node share one body: a stone panel under a rule. */
+.reveal :is(.card, .metric-card, .flow-node) {
+  box-sizing: border-box;
+  min-inline-size: 0;
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 3);
+  border-block-start: var(--rule) solid var(--ink-primary);
+  background: var(--surface-elevated);
+}
+
+.reveal :is(.card, .metric-card, .flow-node).is-accent {
+  border-block-start-color: var(--accent-primary);
+}
+
+.reveal :is(.card, .metric-card, .flow-node).is-agent {
+  border-block-start-color: var(--accent-agent);
+}
+
+.reveal .card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1.5);
+}
+
+.reveal .card h3 {
+  font-size: var(--text-lead);
+}
+
+.reveal .card p:not([class]),
+.reveal .metric-note {
+  color: var(--ink-secondary);
+  font-size: var(--text-small);
+  line-height: 1.4;
+}
+
+.reveal :is(.card-grid, .metric-grid) {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: calc(var(--u) * 3);
+}
+
+.reveal :is(.card-grid, .metric-grid).is-two-up {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.reveal .card-label,
+.reveal .metric-label {
+  color: var(--ink-tertiary);
+  font: 500 var(--text-micro) / 1.3 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Metric card */
+.reveal .metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--u);
+  padding-block-start: calc(var(--u) * 3);
+}
+
+.reveal .metric-value {
+  color: var(--ink-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-metric);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.reveal .metric-unit {
+  margin-inline-start: 0.15em;
+  color: var(--ink-secondary);
+  font-family: var(--font-body);
+  font-size: 0.4em;
+  letter-spacing: 0;
+}
+
+.reveal .metric-card.is-accent .metric-value {
+  color: var(--accent-primary-ink);
+}
+
+.reveal .metric-card.is-agent .metric-value {
+  color: var(--accent-agent-ink);
+}
+
+/* The losing side of a comparison: same size, quieter ink. */
+.reveal .metric-card.is-muted .metric-value {
+  color: var(--ink-tertiary);
+}
+
+/* Compact rows of a figure over a caption, ruled like a ledger. */
+.reveal .stat-list {
+  padding: 0;
+  list-style: none;
+}
+
+.reveal .stat-list > li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  margin: 0;
+  padding: calc(var(--u) * 1.5) 0;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.reveal .stat-figure {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: 500;
+  font-variant-numeric: lining-nums;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.reveal .stat-caption {
+  color: var(--ink-secondary);
+  font-size: var(--text-small);
+  line-height: 1.35;
+}
+
+/* Callout */
+.reveal .callout-box {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--u);
+  max-inline-size: 52ch;
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 3);
+  border-inline-start: var(--rule) solid var(--accent-primary);
+  background: var(--accent-primary-soft);
+  line-height: 1.4;
+}
+
+.reveal .callout-box.is-agent {
+  border-inline-start-color: var(--accent-agent);
+  background: var(--accent-agent-soft);
+}
+
+.reveal .callout-title {
+  color: var(--accent-primary-ink);
+  font: 500 var(--text-micro) / 1.3 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.reveal .callout-box.is-agent .callout-title {
+  color: var(--accent-agent-ink);
+}
+
+/* Comparison table */
+.reveal .compare-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-small);
+  line-height: 1.35;
+  table-layout: fixed;
+}
+
+.reveal .compare-table :is(th, td) {
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2);
+  border-block-end: 1px solid var(--border-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+
+.reveal .compare-table thead th {
+  border-block-end: 2px solid var(--ink-primary);
+  color: var(--ink-secondary);
+  font: 500 var(--text-micro) / 1.3 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.reveal .compare-table tbody th {
+  color: var(--ink-secondary);
+  font-weight: 600;
+}
+
+.reveal .compare-table td.is-muted {
+  color: var(--ink-tertiary);
+}
+
+/* Two columns, left given up and right kept: hollow square against solid square. */
+.reveal .compare-table.is-versus td {
+  position: relative;
+  padding-inline-start: calc(var(--u) * 5);
+}
+
+.reveal .compare-table.is-versus td::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--u) * 1.5 + 0.42em) auto auto calc(var(--u) * 2);
+  box-sizing: border-box;
+  inline-size: 0.55em;
+  block-size: 0.55em;
+  border: 2px solid var(--border-strong);
+}
+
+.reveal .compare-table.is-versus td:first-child {
+  color: var(--ink-secondary);
+}
+
+.reveal .compare-table.is-versus thead th:last-child {
+  border-block-end-color: var(--accent-primary);
+  color: var(--ink-primary);
+}
+
+.reveal .compare-table.is-versus td:last-child {
+  background: var(--surface-elevated);
+  font-weight: 500;
+}
+
+.reveal .compare-table.is-versus td:last-child::before {
+  border-color: var(--accent-primary);
+  background: var(--accent-primary);
+}
+
+/* Miniature TL;DW front page: a hairline frame on the paper, orange bar, numbered rows. */
+.reveal .hn-mockup {
+  position: relative;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-canvas);
+  color: var(--ink-primary);
+  font-family: var(--font-mockup);
+  font-size: var(--text-small);
+  line-height: 1.35;
+}
+
+.reveal .hn-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  padding: 0.2em 0.5em;
+  background: var(--accent-primary);
+  color: var(--on-accent-primary);
+}
+
+/* Rust-on-orange and rust-on-teal fail contrast, so links and emphasis take the fill's own ink. */
+.reveal :is(.hn-bar, .hn-ask) :is(a, em) {
+  color: inherit;
+}
+
+.reveal .hn-brand {
+  font-weight: 700;
+}
+
+.reveal .hn-nav > * + *::before {
+  content: "|";
+  content: "|" / "";
+  padding: 0 0.4em;
+  font-weight: 400;
+}
+
+.reveal .hn-nav [aria-current] {
+  font-weight: 700;
+}
+
+.reveal .hn-list {
+  padding: 0.6em 0.6em 0.7em 2.5em;
+  list-style: decimal;
+}
+
+.reveal .hn-list > li {
+  max-inline-size: none;
+  padding: 0;
+}
+
+.reveal .hn-list > li + li {
+  margin-block-start: 0.45em;
+}
+
+.reveal .hn-list > li::marker {
+  color: var(--ink-tertiary);
+  font-family: inherit;
+  font-size: 1em;
+}
+
+.reveal .hn-new {
+  margin-inline-start: 0.3em;
+  color: var(--accent-primary-ink);
+  font-size: var(--text-micro);
+  font-weight: 700;
+}
+
+.reveal .hn-meta {
+  display: block;
+  margin-block-start: 0.15em;
+  color: var(--ink-tertiary);
+  font-size: var(--text-micro);
+}
+
+/* A submitted video still in the pipeline: no number, a spinner in the marker column. */
+.reveal .hn-list.is-pending {
+  padding-block-end: 0;
+  list-style: none;
+}
+
+.reveal .hn-list.is-pending > li {
+  position: relative;
+}
+
+.reveal .hn-spinner {
+  position: absolute;
+  inset: 0.35em auto auto -1.5em;
+  box-sizing: border-box;
+  inline-size: 0.7em;
+  block-size: 0.7em;
+  border: 0.14em solid var(--border-subtle);
+  border-block-start-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: tldw-spin 0.8s linear infinite;
+}
+
+@keyframes tldw-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.reveal .hn-more {
+  padding: 0 0.6em 0.8em 2.5em;
+}
+
+.reveal .hn-ask {
+  position: absolute;
+  inset: auto 0.7em 0.7em auto;
+  padding: 0.3em 0.9em;
+  border-radius: 99em;
+  background: var(--accent-agent);
+  color: var(--on-accent-agent);
+  font-size: var(--text-micro);
+  font-weight: 700;
+}
+
+/* Horizontal strip of steps, with a chevron in each gap. */
+.reveal .flow-strip {
+  --flow-gap: calc(var(--u) * 3);
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--flow-gap);
+  padding: 0;
+  list-style: none;
+  counter-reset: flow;
+}
+
+.reveal .flow-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  max-inline-size: none;
+  margin: 0;
+  padding: calc(var(--u) * 2);
+  counter-increment: flow;
+  overflow-wrap: anywhere;
+}
+
+.reveal .flow-node + .flow-node::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto calc(var(--flow-gap) / -2);
+  box-sizing: border-box;
+  inline-size: 0.5em;
+  block-size: 0.5em;
+  border-block-start: 2px solid var(--ink-secondary);
+  border-inline-end: 2px solid var(--ink-secondary);
+  transform: translate(-70%, -50%) rotate(45deg);
+}
+
+.reveal .flow-strip.is-numbered .flow-node::before {
+  content: counter(flow, decimal-leading-zero);
+  color: var(--accent-primary-ink);
+  font: 500 var(--text-micro) / 1 var(--font-mono);
+}
+
+.reveal .flow-label {
+  font-size: var(--text-small);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.reveal .flow-detail {
+  color: var(--ink-secondary);
+  font-size: var(--text-micro);
+  line-height: 1.4;
+}
+
+/* Vertical numbered steps. */
+.reveal .step-list {
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.reveal .step-list > li {
+  position: relative;
+  padding: calc(var(--u) * 1.5) 0 calc(var(--u) * 1.5) 2.6em;
+  border-block-start: 1px solid var(--border-subtle);
+  counter-increment: step;
+  line-height: 1.35;
+}
+
+.reveal .step-list > li + li {
+  margin: 0;
+}
+
+.reveal .step-list > li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  inset: calc(var(--u) * 1.5 + 0.2em) auto auto 0;
+  color: var(--accent-primary-ink);
+  font: 500 0.8em / 1.35 var(--font-mono);
+}
+
+/*
+ * Illustration plate. The art is 3:2 on the canvas color, so only the keyline shows.
+ * When a slide runs out of height the image box gets shorter and the art stays whole
+ * inside it (object-fit), which is invisible because ground and canvas match.
+ */
+.reveal .visual-frame {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  max-block-size: 100%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-canvas);
+}
+
+.reveal .visual-frame.is-bleed {
+  border: 0;
+}
+
+.reveal .visual-art {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+/*
+ * The painted ground is a few levels off the canvas and darker toward the corners.
+ * Lifting the image 3% and then keeping the darker of image and canvas pins the ground
+ * to the canvas exactly, so the art has no visible rectangle.
+ */
+.reveal .visual-frame img {
+  display: block;
+  min-block-size: 0;
+  inline-size: 100%;
+  block-size: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  filter: brightness(1.03);
+  mix-blend-mode: darken;
+}
+
+/* A wide crop of the same art: --ratio sets the shape, --focus the part that stays. */
+.reveal .visual-frame.is-banner img {
+  aspect-ratio: var(--ratio, 5 / 2);
+  object-fit: cover;
+  object-position: var(--focus, 50% 55%);
+}
+
+.reveal .visual-frame figcaption,
+.reveal .diagram-box figcaption {
+  color: var(--ink-secondary);
+  font: 400 var(--text-micro) / 1.4 var(--font-mono);
+}
+
+.reveal .visual-frame figcaption {
+  padding: 0.6em 0.9em;
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+/* HTML label over the art, centred on --x and --y (percentages of the art). */
+.reveal .visual-label {
+  position: absolute;
+  inset: var(--y, 50%) auto auto var(--x, 50%);
+  padding: 0.3em 0.65em;
+  border: 1px solid var(--ink-primary);
+  background: var(--surface-canvas);
+  color: var(--ink-primary);
+  font: 500 var(--text-micro) / 1.2 var(--font-mono);
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+}
+
+/* Frame for an inline SVG or CSS diagram, titled on its top edge like a fieldset. */
+.reveal .diagram-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 3.5) calc(var(--u) * 3) calc(var(--u) * 3);
+  border: 1px solid var(--border-strong);
+}
+
+.reveal .diagram-box .diagram-title {
+  position: absolute;
+  inset: 0 auto auto calc(var(--u) * 2);
+  padding: 0 0.6em;
+  background: var(--surface-canvas);
+  color: var(--ink-secondary);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: translateY(-50%);
+}
+
+.reveal .diagram-box svg {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  overflow: visible;
+}
+
+/* A row of blocks sized by --w: chunks, speaker turns, segments. */
+.reveal .segment-track {
+  display: flex;
+  gap: calc(var(--u) * 0.5);
+}
+
+.reveal .segment {
+  flex: var(--w, 1) 1 0;
+  box-sizing: border-box;
+  min-inline-size: 0;
+  padding: 0.5em 0.6em;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-elevated);
+  color: var(--ink-secondary);
+  font: 500 var(--text-micro) / 1.2 var(--font-mono);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.reveal .segment.is-break {
+  flex: 0 0 calc(var(--u) * 2);
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* Before and after: a raw transcript on the left, the essay on the right. The transcript is open, under a hairline. */
+.reveal .transform-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: calc(var(--u) * 2);
+}
+
+.reveal .transform-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--u);
+}
+
+.reveal .transform-pair .arrow {
+  font-size: var(--text-h3);
+}
+
+.reveal .transcript-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1.25);
+  padding: calc(var(--u) * 1.25) 0 0;
+  border-block-start: 1px solid var(--border-strong);
+  color: var(--ink-secondary);
+  font: 400 var(--text-micro) / 1.5 var(--font-mono);
+}
+
+.reveal .transcript-card p {
+  max-inline-size: none;
+}
+
+.reveal .transcript-card .ts {
+  color: var(--accent-agent-ink);
+}
+
+.reveal .transcript-card .spk {
+  color: var(--accent-primary-ink);
+  font-weight: 500;
+}
+
+/* A rendered essay, set in the product's own face like the front-page mockup. */
+.reveal .essay-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1.25);
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 3);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-sheet);
+  box-shadow: var(--shadow-sheet);
+  font-family: var(--font-mockup);
+  font-synthesis: weight style;
+}
+
+.reveal .essay-card :is(h3, h4) {
+  font-family: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.reveal .essay-card h3 {
+  font-size: var(--text-small);
+}
+
+.reveal .essay-card h4,
+.reveal .essay-card p {
+  font-size: var(--text-micro);
+}
+
+.reveal .essay-card p {
+  line-height: 1.5;
+}
+
+.reveal .essay-card em {
+  color: inherit;
+  font-style: italic;
+}
+
+.reveal .essay-card .essay-meta {
+  color: var(--ink-tertiary);
+}
+
+/* ------------------------------------------- 5b. Revision 2 components */
+
+/* Byline for the title slide. Works in the copy column or inside the footer. */
+.reveal .author-line {
+  max-inline-size: none;
+  color: var(--ink-primary);
+  font: 500 var(--text-small) / 1.35 var(--font-body);
+}
+
+/*
+ * Framework logos. The brand colors live in the SVG files; the pill gives every mark
+ * the same near-white ground and a keyline so it sits cleanly on paper, stone or teal.
+ */
+.reveal .logo-icon {
+  display: block;
+  flex: none;
+  inline-size: var(--logo-size);
+  block-size: var(--logo-size);
+  object-fit: contain;
+}
+
+.reveal .logo-icon.is-large {
+  inline-size: var(--logo-size-large);
+  block-size: var(--logo-size-large);
+}
+
+.reveal .logo-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.45em;
+  padding: 0.25em 0.7em 0.25em 0.4em;
+  border: 1px solid var(--border-subtle);
+  border-radius: 99em;
+  background: var(--surface-sheet);
+  color: var(--ink-primary);
+  font: 500 var(--text-micro) / 1 var(--font-mono);
+  white-space: nowrap;
+}
+
+/* Mark only, no name: a round chip. Give the image alt text. */
+.reveal .logo-badge.is-icon {
+  padding: 0.25em;
+}
+
+.reveal .logo-stack {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-self: flex-start;
+  gap: calc(var(--u) * 0.5);
+}
+
+/*
+ * Architecture diagram: lanes stacked over a bus, drawn as a print schematic. Lanes and
+ * the bus are open bands under a rule, a node is a label over a hairline, and only an
+ * agent gets an outline. Everything inside is set at the smallest text size.
+ */
+.reveal .arch-diagram {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1.25);
+  font-size: var(--text-micro);
+  line-height: 1.3;
+}
+
+.reveal .arch-lane {
+  display: grid;
+  grid-template-columns: var(--lane-label, 8.5em) minmax(0, 1fr);
+  align-items: center;
+  gap: calc(var(--u) * 1.5);
+  padding: calc(var(--u) * 1.25) 0;
+  border-block-start: 1px solid var(--border-strong);
+}
+
+/* Plain HTTP calls sit under a grey hairline, agent calls under a teal one. */
+.reveal .arch-lane.is-http {
+  border-block-start-color: var(--border-strong);
+}
+
+.reveal .arch-lane.is-agent {
+  border-block-start-color: var(--accent-agent);
+}
+
+.reveal .arch-label {
+  max-inline-size: none;
+  color: var(--ink-secondary);
+  font: 500 var(--text-micro) / 1.25 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reveal .arch-lane.is-agent .arch-label {
+  color: var(--accent-agent-ink);
+}
+
+.reveal .arch-flow {
+  display: flex;
+  align-items: stretch;
+  gap: var(--u);
+  min-inline-size: 0;
+}
+
+.reveal .arch-lane > .arch-flow:only-child {
+  grid-column: 1 / -1;
+}
+
+.reveal .arch-node {
+  box-sizing: border-box;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  min-inline-size: 0;
+  padding: var(--u) 0;
+  border-block-end: 1px solid var(--border-strong);
+  /* The canvas color, not transparent: it reads as no fill but still hides an edge drawn behind the node. */
+  background: var(--surface-canvas);
+  overflow-wrap: anywhere;
+}
+
+/*
+ * A model decides here: the one node with an outline, dashed teal, with the framework's
+ * name set into the top edge like a fieldset legend. The name sits on the canvas color.
+ */
+.reveal .arch-node.is-agent {
+  position: relative;
+  margin-block-start: var(--u);
+  padding: calc(var(--u) * 2) calc(var(--u) * 1.5) var(--u);
+  border: 1.5px dashed var(--accent-agent);
+}
+
+.reveal .arch-node.is-agent::before {
+  content: "PydanticAI";
+  position: absolute;
+  inset: 0 auto auto var(--u);
+  padding: 0 0.4em;
+  background: var(--surface-canvas);
+  color: var(--accent-agent-ink);
+  font: 500 var(--text-micro) / 1 var(--font-mono);
+  transform: translateY(-50%);
+}
+
+.reveal .arch-node.is-agent[data-tab]::before {
+  content: attr(data-tab);
+}
+
+/* A failure or the one thing to notice: vermilion top rule. */
+.reveal .arch-node.is-accent {
+  border-block-start: var(--rule) solid var(--accent-primary);
+}
+
+/* Something the owner edits by hand (the channel list, the style guide): vermilion left rule. */
+.reveal :is(.arch-node, .flow-node, .card).is-owner {
+  border-inline-start: var(--rule) solid var(--accent-primary);
+}
+
+.reveal .arch-node.is-owner {
+  padding-inline-start: calc(var(--u) * 1.25);
+}
+
+/* Key to the node styles. */
+.reveal .arch-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--u) calc(var(--u) * 2.5);
+  padding: 0;
+  list-style: none;
+  color: var(--ink-secondary);
+  font: 500 var(--text-micro) / 1.2 var(--font-mono);
+}
+
+.reveal .arch-legend > li {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  max-inline-size: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reveal .arch-legend > li::before {
+  content: "";
+  flex: none;
+  box-sizing: border-box;
+  inline-size: 1.5em;
+  block-size: 1em;
+  border-block-end: 1px solid var(--border-strong);
+}
+
+.reveal .arch-legend > li.is-agent::before {
+  border: 1.5px dashed var(--accent-agent);
+}
+
+.reveal .arch-legend > li.is-owner::before {
+  border: 1px solid var(--border-strong);
+  border-inline-start: var(--rule) solid var(--accent-primary);
+}
+
+/*
+ * An inline SVG laid over the diagram for edges the rows cannot draw: branches, returns,
+ * failure paths. Lines default to 1px ink with no fill; the ink classes recolor them.
+ */
+.reveal .arch-edges {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.reveal :where(.arch-edges) :where(path, line, polyline) {
+  fill: none;
+  stroke: var(--ink-primary);
+  stroke-width: var(--edge);
+  vector-effect: non-scaling-stroke;
+}
+
+.reveal :is(.arch-node, .loop-step) > strong {
+  font-weight: 600;
+}
+
+.reveal :is(.arch-node, .loop-step) > :is(span, p):not([class]) {
+  max-inline-size: none;
+  color: var(--ink-secondary);
+}
+
+/*
+ * Connector. A line with a head, centred on the row; data-label prints above the line
+ * and sets its length. is-back points left, is-down and is-up run vertically (no label).
+ */
+.reveal .arch-arrow {
+  position: relative;
+  flex: none;
+  align-self: center;
+  min-inline-size: var(--len, calc(var(--u) * 4));
+  color: var(--ink-secondary);
+  font: 500 var(--text-micro) / 1.2 var(--font-mono);
+  text-align: center;
+  white-space: nowrap;
+  transform: translateY(calc(-50% + var(--edge) / 2));
+}
+
+.reveal .arch-arrow::before {
+  content: attr(data-label);
+  display: block;
+  padding: 0 calc(var(--u) * 1.5) 0.2em calc(var(--u) * 0.5);
+  border-block-end: var(--edge) solid currentColor;
+}
+
+.reveal .arch-arrow::after {
+  content: "";
+  position: absolute;
+  inset: auto 1px calc(var(--u) * -0.5 + var(--edge) / 2) auto;
+  box-sizing: border-box;
+  inline-size: var(--u);
+  block-size: var(--u);
+  border-block-start: var(--edge) solid currentColor;
+  border-inline-end: var(--edge) solid currentColor;
+  transform: rotate(45deg);
+}
+
+.reveal .arch-arrow.is-back::before {
+  padding-inline: calc(var(--u) * 1.5) calc(var(--u) * 0.5);
+}
+
+.reveal .arch-arrow.is-back::after {
+  inset-inline: 1px auto;
+  transform: rotate(-135deg);
+}
+
+.reveal .arch-arrow:is(.is-down, .is-up) {
+  min-inline-size: 0;
+  inline-size: var(--edge);
+  block-size: var(--len, calc(var(--u) * 2.5));
+  margin-inline: auto;
+  background: currentColor;
+  transform: none;
+}
+
+.reveal .arch-arrow:is(.is-down, .is-up)::before {
+  display: none;
+}
+
+.reveal .arch-arrow.is-down::after {
+  inset: auto auto 1px calc(var(--u) * -0.5 + var(--edge) / 2);
+  transform: rotate(135deg);
+}
+
+.reveal .arch-arrow.is-up::after {
+  inset: 1px auto auto calc(var(--u) * -0.5 + var(--edge) / 2);
+  transform: rotate(-45deg);
+}
+
+.reveal .arch-arrow.is-agent {
+  color: var(--accent-agent-ink);
+}
+
+.reveal .arch-arrow.is-accent {
+  color: var(--accent-primary-ink);
+}
+
+/* The shared spine under the lanes: an open band between two ink rules. */
+.reveal .arch-bus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--u) calc(var(--u) * 1.5);
+  padding: var(--u) 0;
+  border-block: var(--edge) solid var(--ink-primary);
+  color: var(--ink-primary);
+  font: 500 var(--text-micro) / 1.3 var(--font-mono);
+}
+
+.reveal .arch-bus.is-agent {
+  border-block-color: var(--accent-agent);
+  color: var(--accent-agent-ink);
+}
+
+.reveal .arch-bus small {
+  font-size: inherit;
+  font-weight: 400;
+}
+
+/*
+ * Agent loop: numbered steps in a row with a return path drawn underneath.
+ * Set --steps to the number of steps and --loop-from / --loop-to to the two steps the
+ * return path joins; data-return labels it. is-open removes the return path.
+ */
+.reveal .agent-loop {
+  --steps: 4;
+  --loop-from: 2;
+  --loop-to: 3;
+  --loop-gap: calc(var(--u) * 3);
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--loop-gap);
+  padding: 0 0 calc(var(--u) * 4.5);
+  list-style: none;
+  counter-reset: loop;
+  font-size: var(--text-micro);
+  line-height: 1.3;
+}
+
+.reveal .agent-loop::after {
+  content: attr(data-return);
+  position: absolute;
+  inset: auto auto calc(var(--u) * 0.5) calc((var(--loop-from) - 0.5) / var(--steps) * 100%);
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  inline-size: calc((var(--loop-to) - var(--loop-from)) / var(--steps) * 100%);
+  block-size: calc(var(--u) * 3.5);
+  padding-block-end: 0.2em;
+  border: var(--edge) solid var(--accent-agent-ink);
+  border-block-start: 0;
+  border-radius: 0 0 var(--u) var(--u);
+  color: var(--accent-agent-ink);
+  font: 500 var(--text-micro) / 1.2 var(--font-mono);
+  white-space: nowrap;
+}
+
+/* Head of the return path, pointing up into the earlier step. */
+.reveal .agent-loop::before {
+  content: "";
+  position: absolute;
+  inset: auto auto calc(var(--u) * 3)
+    calc((var(--loop-from) - 0.5) / var(--steps) * 100% - var(--u) * 0.5 + var(--edge) / 2);
+  box-sizing: border-box;
+  inline-size: var(--u);
+  block-size: var(--u);
+  border-block-start: var(--edge) solid var(--accent-agent-ink);
+  border-inline-end: var(--edge) solid var(--accent-agent-ink);
+  transform: rotate(-45deg);
+}
+
+.reveal .agent-loop.is-open {
+  padding-block-end: 0;
+}
+
+.reveal .agent-loop.is-open::before,
+.reveal .agent-loop.is-open::after {
+  display: none;
+}
+
+.reveal .loop-step {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  max-inline-size: none;
+  min-inline-size: 0;
+  margin: 0;
+  padding: var(--u) 0 0;
+  border-block-start: var(--edge) solid var(--accent-agent);
+  counter-increment: loop;
+  overflow-wrap: anywhere;
+}
+
+/* The step number in an outlined disc. */
+.reveal .loop-step::before {
+  content: counter(loop);
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  inline-size: 1.5em;
+  block-size: 1.5em;
+  border: var(--edge) solid currentColor;
+  border-radius: 50%;
+  color: var(--accent-agent-ink);
+  font: 500 var(--text-micro) / 1 var(--font-mono);
+}
+
+.reveal .loop-step + .loop-step::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto calc(var(--loop-gap) / -2);
+  box-sizing: border-box;
+  inline-size: 0.5em;
+  block-size: 0.5em;
+  border-block-start: var(--edge) solid var(--accent-agent-ink);
+  border-inline-end: var(--edge) solid var(--accent-agent-ink);
+  transform: translate(-70%, -50%) rotate(45deg);
+}
+
+/* The step the slide is about: rust rule and number. Orange is too faint for a thin line. */
+.reveal .loop-step.is-accent {
+  border-block-start-color: var(--accent-primary-ink);
+}
+
+.reveal .loop-step.is-accent::before {
+  color: var(--accent-primary-ink);
+}
+
+/* Which scope a run searches: joined options, the active one filled. */
+.reveal .scope-pills {
+  display: inline-flex;
+  align-self: flex-start;
+  inline-size: fit-content;
+  padding: 0;
+  border: 1px solid var(--accent-agent-ink);
+  border-radius: 99em;
+  background: var(--surface-sheet);
+  list-style: none;
+  overflow: hidden;
+}
+
+.reveal .scope-pills > li {
+  max-inline-size: none;
+  margin: 0;
+  padding: 0.4em 0.85em;
+  color: var(--accent-agent-ink);
+  font: 500 var(--text-micro) / 1 var(--font-mono);
+  white-space: nowrap;
+}
+
+.reveal .scope-pills > li + li {
+  border-inline-start: 1px solid var(--accent-agent-ink);
+}
+
+.reveal .scope-pills > li.is-active {
+  background: var(--accent-agent);
+  color: var(--on-accent-agent);
+}
+
+/*
+ * Benchmark bars. --value is the bar's share of the track, as a percentage of the
+ * largest figure in the list. The figure is always printed beside the bar.
+ */
+.reveal .bench-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--u);
+  padding: 0;
+  list-style: none;
+}
+
+.reveal .bench-row {
+  display: grid;
+  grid-template-columns: var(--bench-label, 11em) minmax(0, 1fr) var(--bench-value, 5em);
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  max-inline-size: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-small);
+  line-height: 1.25;
+}
+
+.reveal .bench-label {
+  overflow-wrap: anywhere;
+}
+
+.reveal .bench-bar {
+  position: relative;
+  display: block;
+  block-size: calc(var(--u) * 2.5);
+  background: color-mix(in oklab, var(--ink-primary) 7%, transparent);
+}
+
+.reveal .bench-fill {
+  display: block;
+  inline-size: var(--value, 50%);
+  block-size: 100%;
+  background: var(--ink-primary);
+}
+
+.reveal .bench-value {
+  font: 500 var(--text-small) / 1.2 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  white-space: nowrap;
+}
+
+.reveal :is(.bench-row, .eval-run).is-agent .bench-fill {
+  background: var(--accent-agent);
+}
+
+/* The orange alone is under 3:1 on the track, so the bar carries a rust outline. */
+.reveal :is(.bench-row, .eval-run).is-accent .bench-fill {
+  background: var(--accent-primary);
+  box-shadow: inset 0 0 0 2px var(--accent-primary-ink);
+}
+
+.reveal .bench-row.is-accent .bench-value {
+  color: var(--accent-primary-ink);
+}
+
+/* The option that lost. */
+.reveal .bench-row.is-muted {
+  color: var(--ink-secondary);
+}
+
+.reveal :is(.bench-row, .eval-run).is-muted .bench-fill {
+  background: var(--ink-tertiary);
+}
+
+/* A ruled strip of small figures on the bare canvas: what the design left out. */
+.reveal .footprint-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  padding: 0;
+  border-block-start: var(--edge) solid var(--ink-primary);
+  border-block-end: 1px solid var(--border-strong);
+  list-style: none;
+}
+
+.reveal .footprint-strip > li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  max-inline-size: none;
+  margin: 0;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2);
+}
+
+.reveal .footprint-strip > li + li {
+  border-inline-start: 1px solid var(--border-strong);
+}
+
+.reveal .footprint-figure {
+  font-family: var(--font-display);
+  font-size: var(--text-lead);
+  font-weight: 500;
+  font-variant-numeric: lining-nums;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.reveal .footprint-strip > li.is-accent .footprint-figure {
+  color: var(--accent-primary-ink);
+}
+
+.reveal .footprint-label {
+  color: var(--ink-secondary);
+  font: 500 var(--text-micro) / 1.3 var(--font-mono);
+}
+
+/*
+ * Split loop (s09): the illustration beside a two-by-two loop of numbered steps.
+ * Same two-column body as slide-split, with tighter steps.
+ */
+.reveal .split-loop {
+  --split-copy: 1fr;
+  --split-visual: 1fr;
+}
+
+.reveal .split-loop > .slide-body {
+  gap: calc(var(--u) * 4);
+}
+
+.reveal .flow-strip.is-two-up {
+  --flow-gap: calc(var(--u) * 2);
+  grid-auto-flow: row;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* In two columns a chevron only makes sense between the left and right step. */
+.reveal .flow-strip.is-two-up .flow-node:nth-child(odd)::after {
+  display: none;
+}
+
+.reveal .split-loop .flow-node {
+  padding: calc(var(--u) * 1.5);
+}
+
+/*
+ * Editorial flow (s09): numbered steps set straight onto the canvas. No fills and no
+ * boxes: a hairline above each step, a vermilion serif numeral, a title and a line of copy.
+ */
+.reveal .editorial-flow {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  list-style: none;
+  counter-reset: editorial;
+}
+
+.reveal .editorial-step {
+  display: grid;
+  grid-template-columns: var(--num-col, 2.4em) minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: calc(var(--u) * 2);
+  max-inline-size: none;
+  margin: 0;
+  padding: var(--step-pad, calc(var(--u) * 1.75)) 0;
+  border-block-start: 1px solid var(--border-strong);
+  counter-increment: editorial;
+}
+
+/* The first rule is ink, like the head rule of a table. */
+.reveal .editorial-step:first-child {
+  border-block-start-color: var(--ink-primary);
+}
+
+/* Orange is under 3:1 on paper even at this size, so the numeral is vermilion ink. */
+.reveal .editorial-num {
+  color: var(--accent-primary-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+/* Left empty, the numeral is filled in from the list's own count. */
+.reveal .editorial-num:empty::before {
+  content: counter(editorial, decimal-leading-zero);
+}
+
+.reveal .editorial-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  min-inline-size: 0;
+}
+
+.reveal .editorial-copy > :is(h3, h4) {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.reveal .editorial-copy > p {
+  max-inline-size: none;
+  color: var(--ink-secondary);
+  font-size: var(--text-small);
+  line-height: 1.4;
+}
+
+/* A step that is one sentence with no title: body size, in primary ink. */
+.reveal .editorial-copy > p:only-child {
+  color: var(--ink-primary);
+  font-size: var(--text-body);
+  line-height: 1.35;
+}
+
+/* The closing line under a final ink rule, after the last step. */
+.reveal .editorial-takeaway {
+  max-inline-size: none;
+  padding-block-start: calc(var(--u) * 2);
+  border-block-start: 1px solid var(--ink-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-lead);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* A framework named in passing: its mark and its name, inline, with no pill around it. */
+.reveal .editorial-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  color: var(--ink-primary);
+  font: 500 var(--text-micro) / 1.2 var(--font-mono);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.reveal .editorial-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 0.5) calc(var(--u) * 2);
+}
+
+/* Two columns of steps, for when four rows are too tall. */
+.reveal .editorial-flow.is-two-up {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: calc(var(--u) * 5);
+}
+
+.reveal .editorial-flow.is-two-up > .editorial-step:nth-child(2) {
+  border-block-start-color: var(--ink-primary);
+}
+
+/* ------------------------------------------- 5c. Revision 4 components */
+
+/*
+ * Everything in this section sits straight on the canvas, with no fill behind text and no
+ * box around it. A group is headed by a thin rule and its rows by hairlines above them.
+ * Two tones carry meaning. Teal (is-agent) is an agent, or the path that works. Vermilion
+ * ink (is-accent) is a risk, an attack or a failure. A toned group hands its ink to the
+ * labels and numerals inside it through --tone-ink.
+ */
+.reveal :is(.eval-group, .demo-col, .eval-run).is-agent {
+  --tone-ink: var(--accent-agent-ink);
+  --tone-rule: var(--accent-agent);
+}
+
+.reveal :is(.eval-group, .demo-col, .eval-run).is-accent {
+  --tone-ink: var(--accent-primary-ink);
+  --tone-rule: var(--accent-primary-ink);
+}
+
+.reveal .eval-run.is-muted {
+  --tone-ink: var(--ink-secondary);
+}
+
+/* Small mono capitals over a column or at the head of a band. */
+.reveal .col-label {
+  max-inline-size: none;
+  color: var(--tone-ink, var(--ink-secondary));
+  font: 500 var(--text-micro) / 1.25 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/*
+ * A full-width band between two hairlines: a label column, then equal columns for what
+ * follows. strip-band holds one strip; eval-target holds one goal per column.
+ */
+.reveal :is(.strip-band, .eval-target) {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: var(--band-label, calc(var(--u) * 19));
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: center;
+  column-gap: calc(var(--u) * 3);
+  padding: calc(var(--u) * 1.5) 0;
+  border-block: 1px solid var(--border-strong);
+}
+
+.reveal .strip-band.is-open {
+  padding-block-end: 0;
+  border-block-end: 0;
+}
+
+.reveal :is(.ladder, .gate-strip, .tool-strip) {
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-micro);
+  line-height: 1.25;
+}
+
+.reveal :is(.ladder-rung, .gate-strip > li, .tool-strip > li) {
+  max-inline-size: none;
+  margin: 0;
+}
+
+/*
+ * Before and after (s03): one row per habit. The old way in secondary ink, a thin arrow,
+ * the new way in primary ink. The arrow is drawn inside the after cell.
+ */
+.reveal .shift-strip {
+  --shift-arrow: calc(var(--u) * 6);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--text-small);
+  line-height: 1.3;
+}
+
+.reveal :is(.shift-head, .shift-row) {
+  display: grid;
+  grid-template-columns: minmax(0, var(--shift-before, 4fr)) minmax(0, var(--shift-after, 5fr));
+  column-gap: calc(var(--u) * 2);
+}
+
+.reveal .shift-head {
+  padding-block-end: var(--u);
+}
+
+.reveal .shift-head > :last-child {
+  padding-inline-start: var(--shift-arrow);
+}
+
+.reveal .shift-row {
+  align-items: baseline;
+  padding: var(--row-pad, calc(var(--u) * 1.5)) 0;
+  border-block-start: 1px solid var(--border-strong);
+}
+
+/* The first rule of a ruled list is ink, like the head rule of a table. */
+.reveal :is(.shift-row, .risk-row):first-child,
+.reveal .shift-head + .shift-row,
+.reveal .risk-head + .risk-row {
+  border-block-start-color: var(--ink-primary);
+}
+
+.reveal .shift-row.is-agent {
+  --shift-ink: var(--accent-agent-ink);
+}
+
+.reveal .shift-before {
+  color: var(--ink-secondary);
+}
+
+.reveal .shift-after {
+  position: relative;
+  padding-inline-start: var(--shift-arrow);
+  color: var(--ink-primary);
+  font-weight: 500;
+}
+
+/* Shaft, centred on the first line of text. */
+.reveal .shift-after::before {
+  content: "";
+  position: absolute;
+  inset: calc(0.65em - var(--edge) / 2) auto auto 0;
+  inline-size: calc(var(--shift-arrow) - var(--u) * 1.5 - 2px);
+  border-block-start: var(--edge) solid var(--shift-ink, var(--ink-primary));
+}
+
+/* Head. */
+.reveal .shift-after::after {
+  content: "";
+  position: absolute;
+  inset: 0.65em auto auto calc(var(--shift-arrow) - var(--u) * 2.5 - 1px);
+  box-sizing: border-box;
+  inline-size: var(--u);
+  block-size: var(--u);
+  border-block-start: var(--edge) solid var(--shift-ink, var(--ink-primary));
+  border-inline-end: var(--edge) solid var(--shift-ink, var(--ink-primary));
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/*
+ * Autonomy ladder (s04): rungs stacked bottom to top in source order, numbered on a
+ * vertical rail. Active rungs are vermilion ink and bold, with a bracket down their right.
+ */
+.reveal .ladder {
+  --rung: calc(var(--u) * 5.5);
+  position: relative;
+  display: flex;
+  flex-direction: column-reverse;
+  inline-size: fit-content;
+  counter-reset: ladder;
+}
+
+/* The rail, from the centre of the bottom number to the centre of the top one. */
+.reveal .ladder::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--rung) / 2) auto calc(var(--rung) / 2) calc(0.75em - var(--edge) / 2);
+  border-inline-start: var(--edge) solid var(--border-strong);
+}
+
+.reveal .ladder-rung {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  min-block-size: var(--rung);
+  padding: 0 calc(var(--u) * 2.5) 0 0;
+  color: var(--ink-primary);
+  counter-increment: ladder;
+}
+
+/* The rung's number in an outlined disc. The canvas color hides the rail behind it. */
+.reveal .ladder-rung::before {
+  content: counter(ladder);
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  inline-size: 1.5em;
+  block-size: 1.5em;
+  border: var(--edge) solid currentColor;
+  border-radius: 50%;
+  background: var(--surface-canvas);
+  font: 500 var(--text-micro) / 1 var(--font-mono);
+}
+
+.reveal .ladder-rung.is-active {
+  color: var(--accent-primary-ink);
+  font-weight: 600;
+}
+
+.reveal .ladder-rung.is-muted {
+  color: var(--ink-secondary);
+}
+
+/* The bracket. Neighbouring active rungs share one. */
+.reveal .ladder-rung.is-active::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  inline-size: var(--u);
+  border-inline-end: 1.5px solid currentColor;
+  transition: opacity 0.2s;
+}
+
+/* Its lower end: the first active rung in the source. */
+.reveal .ladder-rung.is-active:first-child::after,
+.reveal .ladder-rung:not(.is-active) + .ladder-rung.is-active::after {
+  inset-block-end: var(--u);
+  border-block-end: 1.5px solid currentColor;
+}
+
+/* Its upper end: the last active rung in the source. */
+.reveal .ladder-rung.is-active:last-child::after,
+.reveal .ladder-rung.is-active:has(+ .ladder-rung:not(.is-active))::after {
+  inset-block-start: var(--u);
+  border-block-start: 1.5px solid currentColor;
+}
+
+/* The bracket's label, to its right, centred on the lower edge of the rung that holds it. */
+.reveal .ladder-note {
+  position: absolute;
+  inset: auto auto 0 calc(100% + 0.5em);
+  color: var(--accent-primary-ink);
+  font: 500 var(--text-micro) / 1 var(--font-mono);
+  white-space: nowrap;
+  transform: translateY(50%);
+}
+
+/* When the label is a fragment, the bracket waits for it. */
+.reveal .ladder:has(.ladder-note.fragment:not(.visible)) .ladder-rung.is-active::after {
+  opacity: 0;
+}
+
+/* Human gates (s04): each item behind the vermilion rule that marks what the owner controls. */
+.reveal :is(.gate-strip, .tool-strip) {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+
+.reveal .gate-strip {
+  column-gap: calc(var(--u) * 3);
+}
+
+.reveal .gate-strip > li {
+  padding: 0 0 0 calc(var(--u) * 1.25);
+  border-inline-start: var(--rule) solid var(--accent-primary);
+  color: var(--ink-secondary);
+}
+
+.reveal .gate-strip > li > strong {
+  display: block;
+  color: var(--ink-primary);
+}
+
+/* Tool boundary (s05): a large figure beside a name and a line, one hairline between cells. */
+.reveal .tool-strip > li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: calc(var(--u) * 2);
+  padding: 0 calc(var(--u) * 3) 0 0;
+}
+
+.reveal .tool-strip > li + li {
+  padding-inline-start: calc(var(--u) * 3);
+  border-inline-start: 1px solid var(--border-strong);
+}
+
+.reveal .tool-count {
+  color: var(--ink-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  font-weight: 500;
+  font-variant-numeric: lining-nums;
+  line-height: 0.9;
+}
+
+.reveal .tool-strip > li.is-agent .tool-count {
+  color: var(--accent-agent-ink);
+}
+
+.reveal .tool-strip > li.is-accent .tool-count {
+  color: var(--accent-primary-ink);
+}
+
+.reveal .tool-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1em;
+  min-inline-size: 0;
+  color: var(--ink-secondary);
+}
+
+.reveal .tool-copy > strong {
+  color: var(--ink-primary);
+}
+
+/*
+ * Evaluation suite (s07): open columns of numbered cases. The count runs through every
+ * list inside eval-columns, so ten cases in three groups read 01 to 10.
+ */
+.reveal .eval-columns {
+  display: grid;
+  grid-template-columns: var(--eval-cols, repeat(3, minmax(0, 1fr)));
+  align-items: start;
+  column-gap: calc(var(--u) * 5);
+  counter-reset: evalcase;
+}
+
+.reveal :is(.eval-group, .demo-col) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--u);
+  min-inline-size: 0;
+  padding-block-start: calc(var(--u) * 1.25);
+  border-block-start: 2px solid var(--tone-rule, var(--ink-primary));
+}
+
+/* A ruled, numbered list. The numeral hangs in the left padding on the first line's baseline. */
+.reveal :is(.eval-cases, .demo-steps) {
+  --num: calc(var(--u) * 4.5);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  list-style: none;
+  line-height: 1.3;
+}
+
+.reveal :is(.eval-cases, .demo-steps) > li {
+  max-inline-size: none;
+  margin: 0;
+  padding: var(--row-pad, calc(var(--u) * 0.75)) 0 var(--row-pad, calc(var(--u) * 0.75)) var(--num);
+  border-block-start: 1px solid var(--border-strong);
+}
+
+.reveal :is(.eval-cases, .demo-steps) > li::before {
+  display: inline-block;
+  inline-size: var(--num);
+  margin-inline-start: calc(var(--num) * -1);
+}
+
+.reveal .eval-cases {
+  font-size: var(--case-size, var(--text-micro));
+  line-height: 1.25;
+}
+
+.reveal .eval-cases > li {
+  padding-block: var(--row-pad, calc(var(--u) * 0.625));
+  font-weight: 600;
+  counter-increment: evalcase;
+}
+
+.reveal .eval-cases > li::before {
+  content: counter(evalcase, decimal-leading-zero);
+  color: var(--ink-secondary);
+  font: 500 1em / 1 var(--font-mono);
+}
+
+/* What a case must show to pass, on its own line under the case. */
+.reveal .eval-check {
+  display: block;
+  color: var(--ink-secondary);
+  font-weight: 400;
+}
+
+/* The target band: a figure over a caption in each column. */
+.reveal .eval-goal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  max-inline-size: none;
+  color: var(--ink-secondary);
+  font-size: var(--text-micro);
+  line-height: 1.25;
+}
+
+.reveal .eval-figure {
+  color: var(--ink-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-lead);
+  font-weight: 500;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/*
+ * Experiment log (s08): a column of metric names, then one column per run, left to right
+ * on one ink track with a chevron at each step. Rows are shared through subgrid, so a
+ * metric sits at the same height in every run. Cells carry the spacing, not the grid, so
+ * the track and the row hairlines run unbroken.
+ */
+.reveal .eval-runs {
+  --run-gap: calc(var(--u) * 4);
+  display: grid;
+  grid-template-columns: var(--eval-heads, max-content) repeat(var(--runs, 3), minmax(0, 1fr));
+  grid-template-rows: auto repeat(var(--metrics, 3), auto);
+  font-size: var(--text-micro);
+  line-height: 1.3;
+}
+
+.reveal :is(.eval-heads, .eval-run, .eval-metrics) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: subgrid;
+}
+
+.reveal :is(.eval-heads, .eval-metrics) {
+  grid-row: 2 / -1;
+}
+
+.reveal .eval-heads {
+  grid-column: 1;
+}
+
+.reveal .eval-run {
+  position: relative;
+  grid-row: 1 / -1;
+  min-inline-size: 0;
+  border-block-start: var(--edge) solid var(--ink-primary);
+}
+
+/* A chevron on the track where one run hands over to the next. */
+.reveal .eval-run + .eval-run::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--edge) / -2) auto auto calc(var(--run-gap) / -2);
+  box-sizing: border-box;
+  inline-size: calc(var(--u) * 1.25);
+  block-size: calc(var(--u) * 1.25);
+  border-block-start: var(--edge) solid var(--ink-primary);
+  border-inline-end: var(--edge) solid var(--ink-primary);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.reveal :is(.eval-change, .eval-metric, .eval-heads > *) {
+  padding: calc(var(--u) * 1.25) var(--run-gap) calc(var(--u) * 1.25) 0;
+}
+
+.reveal :is(.eval-metric, .eval-heads > *) {
+  border-block-start: 1px solid var(--border-strong);
+}
+
+.reveal .eval-heads > * {
+  display: flex;
+  align-items: center;
+  color: var(--ink-secondary);
+}
+
+/* The run's name and the one thing it changed. */
+.reveal .eval-change {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  min-inline-size: 0;
+}
+
+.reveal .eval-change > p:not([class]) {
+  max-inline-size: none;
+  color: var(--ink-secondary);
+}
+
+/* A reading: the figure, the change since the last run, and a bar on its own line. */
+.reveal .eval-metric {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: calc(var(--u) * 0.75) calc(var(--u) * 1.5);
+  min-inline-size: 0;
+}
+
+.reveal .eval-metric > .bench-bar {
+  flex: 0 0 100%;
+  block-size: calc(var(--u) * 1.25);
+}
+
+.reveal .eval-delta {
+  color: var(--ink-secondary);
+  font: 500 var(--text-micro) / 1.2 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.reveal .eval-delta.is-agent {
+  color: var(--accent-agent-ink);
+}
+
+.reveal .eval-delta.is-accent {
+  color: var(--accent-primary-ink);
+}
+
+/* A tick across a bar at --at: the target the bar has to reach. */
+.reveal .bench-target {
+  position: absolute;
+  inset: calc(var(--u) * -0.5) auto calc(var(--u) * -0.5) var(--at, 90%);
+  border-inline-start: 2px solid var(--ink-primary);
+}
+
+/*
+ * Risk table (s09): a row per risk under a hairline. The risk in the display face, what
+ * could go wrong in secondary ink, the defense in primary ink.
+ */
+.reveal .risk-table {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--text-micro);
+  line-height: 1.35;
+}
+
+.reveal :is(.risk-head, .risk-row) {
+  display: grid;
+  grid-template-columns: var(--risk-cols, minmax(0, 2.2fr) minmax(0, 3fr) minmax(0, 6fr));
+  column-gap: calc(var(--u) * 4);
+}
+
+.reveal .risk-head {
+  padding-block-end: var(--u);
+}
+
+.reveal .risk-head > .col-label:first-child {
+  color: var(--accent-primary-ink);
+}
+
+.reveal .risk-head > .col-label:last-child {
+  color: var(--accent-agent-ink);
+}
+
+.reveal .risk-row {
+  align-items: baseline;
+  padding: var(--row-pad, calc(var(--u) * 1.5)) 0;
+  border-block-start: 1px solid var(--border-strong);
+}
+
+.reveal .risk-name {
+  color: var(--ink-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-lead);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.reveal .risk-threat {
+  max-inline-size: none;
+  color: var(--ink-secondary);
+}
+
+.reveal .risk-defense {
+  max-inline-size: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-primary);
+}
+
+/*
+ * As a list the defenses run on like a sentence, each behind a small teal square. The
+ * square is a background on the item's left padding, so it never parts from its text.
+ */
+.reveal .risk-defense > li {
+  display: inline;
+  margin: 0;
+  padding: 0 0.7em 0 0.85em;
+  background: linear-gradient(var(--accent-agent), var(--accent-agent)) 0 0.56em / 0.42em 0.42em no-repeat;
+}
+
+/*
+ * Demo (s10): two open columns of numbered steps, each under a rule in its own tone.
+ * The numerals are vermilion ink unless the column is toned.
+ */
+.reveal .demo-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  column-gap: calc(var(--u) * 6);
+}
+
+/* Optional: one vertical hairline between the columns in place of the gap. */
+.reveal .demo-split.is-divided {
+  column-gap: 0;
+}
+
+.reveal .demo-split.is-divided > .demo-col:first-child {
+  padding-inline-end: calc(var(--u) * 3);
+}
+
+.reveal .demo-split.is-divided > .demo-col + .demo-col {
+  padding-inline-start: calc(var(--u) * 3);
+  border-inline-start: 1px solid var(--border-strong);
+}
+
+.reveal .demo-steps {
+  --num: calc(var(--u) * 5.5);
+  font-size: var(--text-body);
+  counter-reset: demo;
+}
+
+.reveal .demo-steps > li {
+  padding-block: var(--row-pad, calc(var(--u) * 1.5));
+  counter-increment: demo;
+}
+
+.reveal .demo-steps > li::before {
+  content: counter(demo);
+  color: var(--tone-ink, var(--accent-primary-ink));
+  font: 500 var(--text-lead) / 1 var(--font-display);
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/*
+ * Revision 5: small line icons, a 5/3/2 mix bar and a big count for the suite (s07), and a
+ * row of model logos for a run (s08). Still no fills behind text and no boxes.
+ */
+
+/* An inline SVG drawn in strokes, in the ink of the text around it. */
+.reveal .mini-icon {
+  flex: none;
+  inline-size: var(--logo-size);
+  block-size: var(--logo-size);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -0.2em;
+  overflow: visible;
+}
+
+/* An icon and its text on one baseline. Works on a shift cell or on a span inside one. */
+.reveal .shift-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--u);
+  min-inline-size: 0;
+}
+
+/* An SVG has no baseline of its own, so it is set down a little from the text's. */
+.reveal :is(.shift-item, .eval-head-stat) > .mini-icon {
+  position: relative;
+  inset-block-start: 0.16em;
+}
+
+/*
+ * The suite at a glance: one segment per group, as wide as its share of the cases.
+ * Typical, edge, attack by default; --n on a segment sets another share.
+ */
+.reveal .eval-mix-bar {
+  display: flex;
+  gap: calc(var(--u) * 0.5);
+  block-size: calc(var(--u) * 1.25);
+}
+
+.reveal .eval-mix-bar > * {
+  flex: var(--n, 1) 1 0;
+  background: var(--ink-primary);
+}
+
+.reveal .eval-mix-bar > :nth-child(1) {
+  flex-grow: var(--n, 5);
+  background: var(--accent-agent);
+}
+
+.reveal .eval-mix-bar > :nth-child(2) {
+  flex-grow: var(--n, 3);
+}
+
+/* Orange alone is under 3:1 on the paper, so the segment carries a vermilion ink outline. */
+.reveal .eval-mix-bar > :nth-child(3) {
+  flex-grow: var(--n, 2);
+  background: var(--accent-primary);
+  box-shadow: inset 0 0 0 2px var(--accent-primary-ink);
+}
+
+/* A group's head: its count as a large numeral, an icon and the group's name. */
+.reveal .eval-head-stat {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--u) * 1.25);
+  color: var(--tone-ink, var(--ink-primary));
+  font-size: var(--text-micro);
+}
+
+.reveal .eval-big-num {
+  color: var(--tone-ink, var(--ink-primary));
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  font-weight: 500;
+  font-variant-numeric: lining-nums;
+  line-height: 0.85;
+  letter-spacing: -0.02em;
+}
+
+/* The logos of the models a run used, above the run's name or on one line with it. */
+.reveal .model-icons {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.75);
+  max-inline-size: none;
+  min-block-size: var(--logo-size);
+}
+
+/* --------------------------------------------------------------- 6. Code */
+
+.reveal :not(pre) > code {
+  padding: 0.08em 0.3em;
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--ink-primary) 7%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+}
+
+.reveal .code-card {
+  --code-ink: var(--ink-on-code);
+  --code-muted: var(--ink-on-code-muted);
+  --code-key: var(--accent-primary-bright);
+  --code-value: var(--accent-agent-bright);
+  border-radius: var(--radius);
+  background: var(--surface-code);
+  color: var(--code-ink);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.reveal .code-card.is-paper {
+  --code-ink: var(--ink-primary);
+  --code-muted: var(--ink-tertiary);
+  --code-key: var(--accent-primary-ink);
+  --code-value: var(--accent-agent-ink);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-elevated);
+  -webkit-font-smoothing: auto;
+}
+
+.reveal .code-card .code-title {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0.65em calc(var(--u) * 3);
+  background: var(--surface-code-raised);
+  color: var(--code-muted);
+  font: 500 var(--text-micro) / 1.3 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.reveal .code-card.is-paper .code-title {
+  border-block-end: 1px solid var(--border-subtle);
+  background: none;
+}
+
+.reveal .code-card .code-title::before {
+  content: "";
+  flex: none;
+  inline-size: 0.6em;
+  block-size: 0.6em;
+  background: var(--accent-primary);
+}
+
+.reveal .code-card pre {
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 3);
+  font: 400 var(--text-code) / 1.55 var(--font-mono);
+  overflow-x: auto;
+  tab-size: 2;
+  white-space: pre;
+}
+
+.reveal .code-card pre code {
+  display: block;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+/* Hand-written tokens (.prompt, .tok-*) and the highlight plugin's classes share four inks. */
+.reveal .code-card :is(.prompt, .tok-key, .hljs-keyword, .hljs-built_in, .hljs-meta, .hljs-section, .hljs-name, .hljs-selector-tag) {
+  color: var(--code-key);
+}
+
+.reveal .code-card :is(.tok-value, .hljs-string, .hljs-number, .hljs-literal, .hljs-symbol, .hljs-regexp) {
+  color: var(--code-value);
+}
+
+.reveal .code-card :is(.tok-muted, .hljs-comment, .hljs-quote) {
+  color: var(--code-muted);
+}
+
+.reveal .code-card :is(.tok-strong, .hljs-title, .hljs-type) {
+  color: var(--code-ink);
+  font-weight: 500;
+}
+
+.reveal .code-card .prompt {
+  user-select: none;
+}
+
+/* Paper inks would fail on the dark plate, so these follow the card's own inks. */
+.reveal .code-card :is(a, em) {
+  color: var(--code-key);
+}
+
+.reveal .code-card :is(small, .text-muted) {
+  color: var(--code-muted);
+}
+
+/* ---------------------------------------------------- 7. Inline SVG inks */
+
+.reveal .fill-ink { fill: var(--ink-primary); }
+.reveal .fill-muted { fill: var(--ink-secondary); }
+.reveal .fill-canvas { fill: var(--surface-canvas); }
+.reveal .fill-elevated { fill: var(--surface-elevated); }
+.reveal .fill-accent { fill: var(--accent-primary); }
+.reveal .fill-accent-soft { fill: var(--accent-primary-soft); }
+.reveal .fill-agent { fill: var(--accent-agent); }
+.reveal .fill-agent-soft { fill: var(--accent-agent-soft); }
+.reveal .fill-none { fill: none; }
+.reveal .stroke-ink { stroke: var(--ink-primary); }
+.reveal .stroke-muted { stroke: var(--border-strong); }
+.reveal .stroke-accent { stroke: var(--accent-primary); }
+.reveal .stroke-agent { stroke: var(--accent-agent); }
+.reveal .stroke-accent-ink { stroke: var(--accent-primary-ink); }
+.reveal .fill-accent-ink { fill: var(--accent-primary-ink); }
+.reveal .stroke-dashed { stroke-dasharray: 6 4; }
+
+.reveal .svg-label {
+  fill: var(--ink-primary);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.reveal .svg-label.is-muted {
+  fill: var(--ink-secondary);
+  font-weight: 400;
+}
+
+.reveal .svg-label.is-accent {
+  fill: var(--accent-primary-ink);
+}
+
+.reveal .svg-label.is-agent {
+  fill: var(--accent-agent-ink);
+}
+
+/* --------------------------------------------------------- 8. Utilities */
+
+/* Declared after the components so they win at equal specificity. */
+.reveal .text-accent {
+  color: var(--accent-primary-ink);
+}
+
+.reveal .text-agent {
+  color: var(--accent-agent-ink);
+}
+
+.reveal .text-muted {
+  color: var(--ink-secondary);
+}
+
+.reveal .mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.reveal .nowrap {
+  white-space: nowrap;
+}
+
+/* Text for screen readers only. */
+.reveal .sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ 9. Motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal *,
+  .reveal *::before,
+  .reveal *::after {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------ 10. Print */
+
+/* PDF export (index.html?print-pdf): one fixed page per slide, each with its own bar. */
+html.reveal-print .reveal::before {
+  display: none;
+}
+
+html.reveal-print .reveal .slides section {
+  top: 0 !important;
+}
+
+html.reveal-print .reveal .slides .pdf-page::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 12;
+  block-size: 6px;
+  background: var(--accent-primary);
+}
+
+html.reveal-print .reveal .code-card pre {
+  white-space: pre-wrap;
+}
+
+/*
+ * Plain browser print: Reveal turns the deck into a linear handout and makes every div a
+ * block. These rules put back the structure the components need and keep their colors.
+ */
+@media print {
+  html:not(.print-pdf) .reveal {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  html:not(.print-pdf) .reveal::before {
+    display: none;
+  }
+
+  html:not(.print-pdf) .reveal .slides section {
+    border-block-start: 4pt solid var(--accent-primary);
+  }
+
+  html:not(.print-pdf) .reveal .slide {
+    padding: 0;
+  }
+
+  html:not(.print-pdf) .reveal :is(.slide, .slide-header, .slide-body, .slide-copy) > * + * {
+    margin-block-start: 12pt;
+  }
+
+  html:not(.print-pdf) .reveal :is(.card-grid, .metric-grid, .flow-strip, .transform-pair, .split-row, .arch-lane, .agent-loop, .footprint-strip, .editorial-step, .strip-band, .eval-target, .shift-head, .shift-row, .gate-strip, .tool-strip, .eval-columns, .eval-runs, .eval-heads, .eval-run, .eval-metrics, .risk-head, .risk-row, .demo-split) {
+    display: grid;
+  }
+
+  html:not(.print-pdf) .reveal :is(.hn-bar, .tag-row, .segment-track, .slide-footer, .transform-link, .arch-flow, .arch-bus, .arch-node, .arch-legend, .bench-list, .editorial-flow, .editorial-copy, .editorial-tags, .shift-strip, .ladder, .eval-group, .eval-cases, .eval-goal, .eval-change, .eval-metric, .risk-table, .demo-col, .demo-steps, .eval-mix-bar, .eval-head-stat, .model-icons) {
+    display: flex;
+  }
+
+  html:not(.print-pdf) .reveal :is(.agent-loop, .ladder, .eval-run, .shift-after) {
+    position: relative;
+  }
+
+  html:not(.print-pdf) .reveal section .logo-icon {
+    display: block;
+    margin: 0;
+    border: 0;
+    background: none;
+  }
+
+  html:not(.print-pdf) .reveal .visual-art {
+    position: relative;
+  }
+
+  html:not(.print-pdf) .reveal section .visual-frame img {
+    margin: 0;
+    border: 0;
+    background: none;
+  }
+
+  html:not(.print-pdf) .reveal .code-card pre {
+    white-space: pre-wrap;
+  }
+
+  html:not(.print-pdf) .reveal :is(.card, .metric-card, .callout-box, .code-card, .visual-frame, .diagram-box, .hn-mockup, .compare-table, .transcript-card, .essay-card, .arch-diagram, .agent-loop, .bench-list, .footprint-strip, .shift-strip, .ladder, .strip-band, .eval-group, .eval-target, .eval-runs, .risk-row, .demo-col) {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+}

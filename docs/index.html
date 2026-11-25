@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TL;DW · Read the talk instead of watching it</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="vendor/reveal/reset.css">
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400..700&amp;family=Newsreader:opsz,wght@48,400..700&amp;display=swap">
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+<main class="reveal">
+  <div class="slides">
+    <section id="s01-title">
+      <div class="slide slide-hero" style="--split-copy: 9fr; --split-visual: 11fr">
+        <div class="slide-body">
+          <div class="slide-copy">
+            <header class="slide-header">
+              <p class="kicker">TL;DW · too long; didn't watch</p>
+              <h1>Read the talk instead of watching it</h1>
+            </header>
+            <p class="lead">Turn long YouTube talks and podcasts into 5-minute essays, plus Q&amp;A over every transcript.</p>
+          </div>
+          <figure class="visual-frame is-bleed">
+            <img src="assets/hero-distill.png" alt="Film strips and audio waves pass through an orange prism and emerge as a printed page.">
+          </figure>
+        </div>
+        <footer class="slide-footer">
+          <p class="author-line">Edoardo Cocciò, Simone Cavallaro and Filippo Lombardo</p>
+        </footer>
+      </div>
+      <aside class="notes">TL;DW follows a list of YouTube channels. When one of them posts a video, it transcribes it with speaker labels and timestamps, writes a standalone essay from the transcript, and puts the essay on a private front page that looks like Hacker News. A chat page answers questions across every transcript. The idea behind it is that reading is several times faster than listening, and in a talk, an interview or a podcast the picture rarely tells you anything. It's 1,789 lines of Python on one server, and it has exactly one user, its owner.</aside>
+    </section>
+
+    <section id="s02-why">
+      <div class="slide slide-split is-reversed is-even" style="--slide-pad-inline: 48px; --slide-pad-block: 38px; --text-h2: 49px; gap: 18px">
+        <header class="slide-header">
+          <h2 style="max-inline-size: none">102 minutes to watch, 6 to read</h2>
+        </header>
+        <div class="slide-body">
+          <div class="slide-copy" style="gap: 0">
+            <div style="padding: 18px 0; border-top: 1px solid var(--border-strong)">
+              <p class="col-label">The problem</p>
+              <p>Great ideas live in 2-hour talks and podcasts. Nobody can watch them all.</p>
+            </div>
+            <div class="fragment" data-fragment-index="0" style="padding: 18px 0; border-top: 1px solid var(--border-strong)">
+              <p class="col-label">Even at 2x speed</p>
+              <p>1h 42m still takes 51 minutes, and the video adds nothing.</p>
+            </div>
+            <div class="fragment" data-fragment-index="1" style="padding: 18px 0; border-top: 1px solid var(--border-strong)">
+              <p class="col-label">With TL;DW</p>
+              <p style="display: flex; align-items: center; gap: 12px; font: 500 var(--text-h3)/1.3 var(--font-display)">1h 42m video <span class="arrow" style="color: var(--ink-primary)" role="img" aria-label="becomes"></span> 6 min read</p>
+              <p>Skim standalone essays, then ask any question.</p>
+            </div>
+          </div>
+          <figure class="visual-frame is-bleed"><img src="assets/reading-vs-watching.png" alt="A long filmstrip unspools beside the single page it becomes."></figure>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>The reader we built this for follows channels of talks, interviews and podcasts, and saves more of them than they will ever watch. Double speed doesn't fix that: a one-hour-42-minute talk still takes 51 minutes, and fast speech is tiring to follow for that long. In most of these videos the picture is a person or two talking, so reading loses nothing. The same talk on our front page is a six-minute read. Reading time is the essay's word count divided by 230, rounded up, and the style guide keeps every essay under 1,500 words, so no essay takes more than seven minutes. Sponsor reads, greetings and banter are cut before you see them.</p>
+        <p>Think of a technical reader's Watch Later list: every new interview adds another hour, even when almost everything that matters is spoken aloud.</p>
+      </aside>
+    </section>
+
+    <section id="s03-what">
+      <div class="slide slide-split is-even" style="--slide-pad-inline: 48px; --slide-pad-block: 38px; --text-h2: 49px; gap: 18px">
+        <header class="slide-header">
+          <h2 style="max-inline-size: none">The listening is done for you</h2>
+        </header>
+        <div class="slide-body">
+          <div class="shift-strip" style="--shift-before: 4fr; --shift-after: 5fr">
+            <div class="shift-head"><span class="col-label">Before</span><span class="col-label">After</span></div>
+            <div class="shift-row fragment" data-fragment-index="0">
+              <span class="shift-before shift-item"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 8a7 7 0 0 1 12-2l2 3M4 15l2 3a7 7 0 0 0 12-2"/></svg><span>Checking channels</span></span>
+              <span class="shift-after shift-item"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg><span>Auto-monitored every 30 min</span></span>
+            </div>
+            <div class="shift-row is-agent fragment" data-fragment-index="1">
+              <span class="shift-before shift-item"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 5 9 7-9 7zm9 0 9 7-9 7z"/></svg><span>Listening at 2x</span></span>
+              <span class="shift-after shift-item"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM15 3v5h4M9 12h7m-7 4h7"/></svg><span>Short standalone essay <span class="editorial-tag text-agent">Essay Agent</span></span></span>
+            </div>
+            <div class="shift-row is-agent fragment" data-fragment-index="2">
+              <span class="shift-before shift-item"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h18M3 16h18"/><rect x="6" y="5" width="3" height="6" rx="1"/><rect x="15" y="13" width="3" height="6" rx="1"/></svg><span>Scrubbing for a quote</span></span>
+              <span class="shift-after shift-item"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4zM8 8h8m-8 4h5"/></svg><span>Instant Q&amp;A across talks <span class="editorial-tag text-agent">Chat Agent</span></span></span>
+            </div>
+          </div>
+          <figure class="hn-mockup" aria-label="Example TL;DW front page">
+            <div class="hn-bar">
+              <b class="hn-brand">TL;DW</b>
+              <span class="hn-nav"><span aria-current="page">Read</span><span>Ask</span><span>Submit</span></span>
+            </div>
+            <ul class="hn-list is-pending">
+              <li><span class="hn-spinner" aria-hidden="true"></span>Sample talk title
+                <span class="hn-meta">transcribing 3/8 · about 3 min left · submitted just now</span>
+              </li>
+            </ul>
+            <ol class="hn-list">
+              <li>What scaling laws predict about small models <span class="hn-new">new</span>
+                <span class="hn-meta">Sample Channel | 1h 42m video | 6 min read | 3 hours ago</span>
+              </li>
+              <li>Why boring infrastructure lasts
+                <span class="hn-meta">Sample Channel | 48m video | 4 min read | 1 day ago</span>
+              </li>
+            </ol>
+            <p class="hn-more">More</p>
+            <span class="hn-ask">Ask</span>
+          </figure>
+        </div>
+        <footer class="slide-footer fragment" data-fragment-index="3">You still pick the channels and writing style.</footer>
+      </div>
+      <aside class="notes">
+        <p>Here is what the reader stops doing. Linux cron polls each channel's feed every 30 minutes, and the Submit page takes any single link, so nobody checks channels by hand. The Essay Agent turns each transcript into an essay that reads as if the ideas had been written down in the first place. When the reader wants one quote or claim, the Chat Agent searches every transcript and says which video each part of the answer came from. On the right is the front page as it looks: a Hacker News layout with the video length and reading time on every row, and a submitted video showing its current step and the time left until its essay is ready.</p>
+        <p>The writer starts with the thesis. The owner chooses what to read. A longer list could also show the sample essay "How a query planner chooses an index": a 1h 5m video, 5 min read, posted 2 days ago.</p>
+      </aside>
+    </section>
+
+    <section id="s04-how-org">
+      <div class="slide" style="--slide-pad-inline: 48px; --slide-pad-block: 38px; --text-h2: 49px; gap: 18px">
+        <header class="slide-header">
+          <h2 style="max-inline-size: none">Simple workflow, two focused agents</h2>
+        </header>
+        <div class="slide-body" style="gap: 22px">
+          <div style="display: grid; grid-template-columns: 290fr 847fr; gap: 32px; align-items: center">
+            <ol class="ladder">
+              <li class="ladder-rung">Fixed script</li>
+              <li class="ladder-rung is-active">Workflow</li>
+              <li class="ladder-rung is-active">Bounded tool use <span class="ladder-note fragment" data-fragment-index="0">TL;DW</span></li>
+              <li class="ladder-rung is-muted">Open-ended agent</li>
+            </ol>
+            <div class="fragment" data-fragment-index="1">
+              <figure class="arch-diagram" aria-label="Six independent parts exchange state with PostgreSQL." style="height: 318px; flex: none"><svg class="arch-edges" aria-hidden="true" viewBox="0 0 847 318" preserveAspectRatio="none">
+                  <defs>
+                    <marker id="org-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M0 0L8 4L0 8z" class="fill-ink" style="stroke: none" />
+                    </marker>
+                  </defs>
+                  <path d="M40 101V263" marker-start="url(#org-arrow)" marker-end="url(#org-arrow)" />
+                  <path d="M266 101V115H66V263" marker-start="url(#org-arrow)" marker-end="url(#org-arrow)" />
+                  <path d="M430 101V263" marker-start="url(#org-arrow)" marker-end="url(#org-arrow)" />
+                  <path d="M800 101V263" marker-start="url(#org-arrow)" marker-end="url(#org-arrow)" />
+                  <path d="M213 227V263" marker-start="url(#org-arrow)" marker-end="url(#org-arrow)" />
+                  <path d="M584 227V263" marker-start="url(#org-arrow)" marker-end="url(#org-arrow)" />
+                </svg>
+                <div style="position: absolute; left: 0.00%; top: 5px; width: 21.25%">
+                  <div class="arch-node" style="justify-content: center; height: 94px">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/rss.svg" width="28" height="28" alt="RSS"></span><strong style="font-size: var(--text-small)">YouTube RSS</strong></div><span>new uploads</span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 23.02%; top: 5px; width: 14.76%">
+                  <div class="arch-node" style="justify-content: center; height: 94px">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/youtube.svg" width="28" height="28" alt="YouTube"></span><strong style="font-size: var(--text-small)">yt-dlp</strong></div><span></span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 42.50%; top: 5px; width: 17.83%">
+                  <div class="arch-node" style="justify-content: center; height: 94px">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/ffmpeg.svg" width="28" height="28" alt="FFmpeg"></span><strong style="font-size: var(--text-small)">FFmpeg</strong></div><span></span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 71.31%; top: 5px; width: 28.69%">
+                  <div class="arch-node" style="justify-content: center; height: 94px">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/openrouter.svg" width="28" height="28" alt="OpenRouter"></span><strong style="font-size: var(--text-small)">OpenRouter</strong></div><span>audio &amp; vectors</span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 10.63%; top: 137px; width: 30.22%">
+                  <div class="arch-node is-agent" data-tab="PydanticAI agent" style="justify-content: center; height: 88px; margin-top: 0">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/pydantic.svg" width="28" height="28" alt="PydanticAI"></span><strong style="font-size: var(--text-small)">Essay Agent</strong></div><span>writes essays</span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 55.49%; top: 137px; width: 30.11%">
+                  <div class="arch-node is-agent" data-tab="PydanticAI agent" style="justify-content: center; height: 88px; margin-top: 0">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/pydantic.svg" width="28" height="28" alt="PydanticAI"></span><strong style="font-size: var(--text-small)">Chat Agent</strong></div><span>answers Q&amp;A</span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 0.00%; top: 266px; width: 100.00%">
+                  <div class="arch-bus"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/postgresql.svg" width="28" height="28" alt="PostgreSQL"><img class="logo-icon is-large" src="assets/logos/supabase.svg" width="28" height="28" alt="Supabase"></span><strong>PostgreSQL on Supabase</strong><small>shared state &amp; queue</small></div>
+                </div>
+              </figure>
+            </div>
+          </div>
+          <div class="strip-band fragment" data-fragment-index="2">
+            <p class="col-label">Human gates</p>
+            <ul class="gate-strip">
+              <li><strong>Channel list</strong></li>
+              <li><strong>Style guide</strong></li>
+              <li><strong>Manual submit or rewrite</strong></li>
+              <li><strong>Private SSH access</strong></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>On the autonomy ladder, TL;DW sits low on purpose: a workflow, with two agents that use tools inside tight bounds. Transcription and embeddings are single requests with a fixed shape, so no model decides anything there. Models make decisions in two places only: writing the essay and answering a question. The agents never talk to each other. PostgreSQL on Supabase holds the state, and each stage looks for its missing piece: a video with no record, a transcript with no essay, a passage with no vector. The owner keeps four gates: which channels are followed, what the style guide says, which single links are submitted or which essays are rewritten, and the SSH tunnel that is the only way in.</p>
+        <p>Code fixes the order of the steps. The two agents never call each other. Each stage reads the shared database to find its next job, which removes the need for a separate broker. Both transcription and embedding use ordinary HTTP requests.</p>
+      </aside>
+    </section>
+
+    <section id="s05-how-ingest">
+      <div class="slide" style="--slide-pad-inline: 48px; --slide-pad-block: 38px; --text-h2: 49px; gap: 18px">
+        <header class="slide-header">
+          <h2 style="max-inline-size: none">Clean transcripts, strict tool limits</h2>
+        </header>
+        <div class="slide-body" style="gap: 36px">
+          <div class="arch-diagram">
+            <div class="arch-flow" style="gap: 6px">
+              <div style="min-width: 0; flex: 1">
+                <div class="arch-node" style="justify-content: flex-start; padding-top: 15px; height: 145px"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/rss.svg" width="28" height="28" alt="RSS"></span><strong style="font-size: var(--text-small)">YouTube RSS</strong><span>new uploads</span></div>
+              </div><span class="arch-arrow" aria-hidden="true" style="--len: 18px"></span>
+              <div style="min-width: 0; flex: 1">
+                <div class="arch-node" style="justify-content: flex-start; padding-top: 15px; height: 145px"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/youtube.svg" width="28" height="28" alt="YouTube"></span><strong style="font-size: var(--text-small)">yt-dlp</strong><span>skip Shorts &lt;3m</span></div>
+              </div><span class="arch-arrow" aria-hidden="true" style="--len: 18px"></span>
+              <div style="min-width: 0; flex: 1">
+                <div class="arch-node" style="justify-content: flex-start; padding-top: 15px; height: 145px"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/ffmpeg.svg" width="28" height="28" alt="FFmpeg"></span><strong style="font-size: var(--text-small)">FFmpeg</strong><span>5-min chunks</span></div>
+              </div><span class="arch-arrow" aria-hidden="true" style="--len: 18px"></span>
+              <div style="min-width: 0; flex: 1">
+                <div class="arch-node" style="justify-content: flex-start; padding-top: 15px; height: 145px"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/openrouter.svg" width="28" height="28" alt="OpenRouter"></span><strong style="font-size: var(--text-small)">Grok STT 2.0</strong><span>words + speakers</span></div>
+              </div><span class="arch-arrow fragment" data-fragment-index="0" style="--len: 18px" aria-hidden="true"></span>
+              <div class="fragment" data-fragment-index="0" style="min-width: 0; flex: 1">
+                <div class="arch-node" style="justify-content: flex-start; padding-top: 15px; height: 145px"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/python.svg" width="28" height="28" alt="Python"></span><strong style="font-size: var(--text-small)">Python</strong><span>clean turns</span></div>
+              </div><span class="arch-arrow fragment" data-fragment-index="0" style="--len: 18px" aria-hidden="true"></span>
+              <div class="fragment" data-fragment-index="0" style="min-width: 0; flex: 1">
+                <div class="arch-node" style="justify-content: flex-start; padding-top: 15px; height: 145px"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/postgresql.svg" width="28" height="28" alt="PostgreSQL"></span><strong style="font-size: var(--text-small)">PostgreSQL</strong><span>save transcript</span></div>
+              </div>
+            </div>
+          </div>
+          <figure class="transcript-card fragment" data-fragment-index="0" aria-label="Transcript excerpt" style="width: min(100%, 990px); align-self: flex-end">
+            <p><span class="ts">12:45 · Speaker 2.1</span> &nbsp; so the question is what happens when you halve the model</p>
+            <p><span class="ts">12:58 · Speaker 2.0</span> &nbsp; right, and the loss curve barely moves until about here</p>
+          </figure>
+          <div class="strip-band is-open fragment" data-fragment-index="1">
+            <p class="col-label">Tool boundary</p>
+            <ul class="tool-strip">
+              <li class="is-agent"><span class="tool-count">1</span><span class="tool-copy"><strong>Essay Agent</strong><span>tool: transcription pipeline (audio to text)</span></span></li>
+              <li class="is-agent"><span class="tool-count">1</span><span class="tool-copy"><strong>Chat Agent</strong><span>tool: read-only retrieval over pgvector</span></span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>yt-dlp reads a video's details before downloading, and when polling anything under three minutes is stored as skipped, which drops Shorts. FFmpeg cuts the audio into five-minute pieces without re-encoding, and each piece takes about 17 seconds through OpenRouter, inside the provider's 60-second limit. Speaker numbers restart in every piece, so each label carries its chunk number and nothing guesses who is who across chunks. Then the tool boundary. Each agent pairs with one read-only tool: the Essay Agent relies on the transcription pipeline to turn audio into a diarized transcript (while ordinary code saves the essay), and the Chat Agent relies on semantic retrieval over pgvector. Neither can change stored data, so a hostile transcript has nothing to act with.</p>
+        <p>Grok returns a timestamp and a speaker for every word. A passage ends at a change of speaker, at 200 words, or at a chunk boundary. At 12:45, label 2.1 means chunk 2 (the third five-minute piece), speaker 1. The video and its passages are saved together in one database transaction. Transcription runs upstream of the Essay Agent. The agent receives its output and cannot initiate downloads, browse the web, delete records or save the essay itself.</p>
+      </aside>
+    </section>
+
+    <section id="s06-how-agents">
+      <div class="slide" style="--slide-pad-inline: 48px; --slide-pad-block: 38px; --text-h2: 49px; gap: 18px">
+        <header class="slide-header">
+          <h2 style="max-inline-size: none">Two focused PydanticAI agents</h2>
+        </header>
+        <div class="slide-body">
+          <div style="display: grid; grid-template-columns: 1fr 1.04fr; gap: 24px; align-items: center">
+            <div class="fragment" data-fragment-index="0" style="">
+              <p class="col-label shift-item"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM15 3v5h4M9 12h7m-7 4h7"/></svg><span>Pattern 1</span></p>
+              <figure class="arch-diagram" aria-label="Single structured request." style="height: 394px; flex: none"><svg class="arch-edges" aria-hidden="true" viewBox="0 0 553 394" preserveAspectRatio="none">
+                  <defs>
+                    <marker id="pattern-1" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M0 0L8 4L0 8z" class="fill-ink" style="stroke: none" />
+                    </marker>
+                  </defs>
+                  <path d="M115 79V98H419V121" marker-end="url(#pattern-1)" />
+                  <path d="M419 79V121" marker-end="url(#pattern-1)" />
+                  <path d="M204 180H287" marker-end="url(#pattern-1)" />
+                  <path d="M419 225V247H120V273" marker-end="url(#pattern-1)" />
+                  <path d="M264 319H287" marker-end="url(#pattern-1)" />
+                </svg>
+                <div style="position: absolute; left: 0.00%; top: 8px; width: 41.59%">
+                  <div class="arch-node" style="justify-content: center; height: 70px"><strong class="shift-item" style="font-size: var(--text-small)"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v5c0 5-4 8-8 10-4-2-8-5-8-10V6z"/><path d="m8.5 11.5 2.5 2.5 4.5-5"/></svg><span>Grounding rules</span></strong><span>facts only</span></div>
+                </div>
+                <div style="position: absolute; left: 52.26%; top: 8px; width: 47.74%">
+                  <div class="arch-node is-owner" style="justify-content: center; height: 70px"><strong class="shift-item" style="font-size: var(--text-small)"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16 9-9 4 4-9 9-5 1zM14 6l2-2a2 2 0 0 1 3 0l1 1a2 2 0 0 1 0 3l-2 2"/></svg><span>Style guide</span></strong><span>your voice</span></div>
+                </div>
+                <div style="position: absolute; left: 0.00%; top: 135px; width: 36.71%">
+                  <div class="arch-node" style="justify-content: center; height: 88px">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/postgresql.svg" width="28" height="28" alt="PostgreSQL"></span><strong style="font-size: var(--text-small)">Transcript</strong></div><span>full talk</span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 52.26%; top: 135px; width: 47.74%">
+                  <div class="arch-node is-agent" data-tab="PydanticAI agent" style="justify-content: center; height: 88px; margin-top: 0">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/pydantic.svg" width="28" height="28" alt="PydanticAI"><img class="logo-icon is-large" src="assets/logos/openrouter.svg" width="28" height="28" alt="OpenRouter"></span><strong style="font-size: var(--text-small)">Essay Agent</strong></div><span>single pass</span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 0.00%; top: 275px; width: 47.56%">
+                  <div class="arch-node" style="justify-content: center; height: 88px"><strong class="shift-item" style="font-size: var(--text-small)"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM15 3v5h4M9 12h7m-7 4h7"/></svg><span>Title + Markdown body</span></strong><span>clean Markdown</span></div>
+                </div>
+                <div style="position: absolute; left: 52.26%; top: 275px; width: 47.74%">
+                  <div class="arch-node" style="justify-content: center; height: 88px">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/postgresql.svg" width="28" height="28" alt="PostgreSQL"></span><strong style="font-size: var(--text-small)">PostgreSQL</strong></div><span>save essay</span>
+                  </div>
+                </div>
+              </figure>
+              <p style="border-top: 1px solid var(--border-strong); padding-top: 12px; font-size: var(--text-small)">Whole talk in, standalone essay out.</p>
+            </div>
+            <div class="fragment" data-fragment-index="1" style="padding-left: 23px; border-left: 1px solid var(--border-strong)">
+              <p class="col-label shift-item"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg><span>Pattern 2</span></p>
+              <figure class="arch-diagram" aria-label="Grounded retrieval with an optional repeat search." style="height: 394px; flex: none"><svg class="arch-edges" aria-hidden="true" viewBox="0 0 553 394" preserveAspectRatio="none">
+                  <defs>
+                    <marker id="pattern-2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M0 0L8 4L0 8z" class="fill-ink" style="stroke: none" />
+                    </marker>
+                  </defs>
+                  <path d="M196 45H281" marker-end="url(#pattern-2)" />
+                  <path d="M470 100V130" marker-end="url(#pattern-2)" />
+                  <path d="M550 204V279" marker-end="url(#pattern-2)" />
+                  <path d="M283 70H208V264H150V279" marker-end="url(#pattern-2)" />
+                  <path d="M24 279V100" marker-end="url(#pattern-2)" />
+                  <path d="M289 330H233V84H281" marker-end="url(#pattern-2)" class="fragment" data-fragment-index="2" />
+                </svg>
+                <div style="position: absolute; left: 0.00%; top: 8px; width: 35.26%">
+                  <div class="arch-node" style="justify-content: center; height: 90px">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/jinja.svg" width="28" height="28" alt="Jinja2"></span><strong style="font-size: var(--text-small)">Question</strong></div><span>essay or library</span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 51.18%; top: 8px; width: 48.82%">
+                  <div class="arch-node is-agent" data-tab="PydanticAI agent" style="justify-content: center; height: 90px; margin-top: 0">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/pydantic.svg" width="28" height="28" alt="PydanticAI"><img class="logo-icon is-large" src="assets/logos/openrouter.svg" width="28" height="28" alt="OpenRouter"></span><strong style="font-size: var(--text-small)">Chat Agent</strong></div><span>search first</span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 52.26%; top: 132px; width: 47.74%">
+                  <div class="arch-node" style="justify-content: center; height: 70px">
+                    <div class="logo-stack" style="gap: 8px; align-items: center"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/voyage.svg" width="28" height="28" alt=""></span><strong style="font-size: var(--text-small)">Voyage 4 Lite</strong></div><span>embed query</span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 52.26%; top: 281px; width: 47.74%">
+                  <div class="arch-node" style="justify-content: center; height: 100px">
+                    <div class="logo-stack"><span class="logo-stack"><img class="logo-icon is-large" src="assets/logos/postgresql.svg" width="28" height="28" alt="PostgreSQL"></span><span class="editorial-tag"><img class="logo-icon is-large" src="assets/logos/supabase.svg" alt="">Supabase</span></div><strong style="font-size: var(--text-small)">8 nearest passages</strong><span>exact search</span>
+                  </div>
+                </div>
+                <div style="position: absolute; left: 0.00%; top: 281px; width: 30.74%">
+                  <div class="arch-node" style="justify-content: center; height: 100px"><strong class="shift-item" style="font-size: var(--text-small)"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4zM8 8h8m-8 4h5"/></svg><span>Answer</span></strong><span>live stream</span></div>
+                </div>
+                <div style="position: absolute; left: 52.26%; top: 211px; width: 46.11%">
+                  <div style="font-size: var(--text-micro); color: var(--ink-secondary)">essay page or whole library</div>
+                </div>
+                <div style="position: absolute; left: 6.69%; top: 155px; width: 25.68%"><span class="fragment" data-fragment-index="2" style="display: block; color: var(--ink-secondary); font: 400 var(--text-micro)/1.25 var(--font-mono)">refine search if needed</span></div>
+              </figure>
+              <p style="border-top: 1px solid var(--border-strong); padding-top: 12px; font-size: var(--text-small)">Search first, answer with source links.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>The Essay Agent makes one call with the full transcript and a typed reply. The source is fixed and fits in the model's context, so a loop would add cost and failure points, and summarizing chunks separately would break arguments that span the talk. Fixed rules forbid any fact, number or quote the transcript lacks; the owner's style guide sets voice and length. The Chat Agent works the other way. Passages of 20 or more words are embedded with Voyage 4 Lite, and its search takes the eight nearest by an exact scan. On the site its first step must be a search. The standalone chat also links each claim to the essay and the exact second in the video.</p>
+        <p>The title and Markdown body are validated before the essay is saved, and the source transcript must still be unchanged. The owner can edit the voice and length for future essays. A question on an essay page searches only that video; Ask searches the library. The Chat Agent can rephrase its search when one query misses a relevant passage. Starlette streams the response. The site's chat names the source video; the standalone chat supplies the clickable essay and timestamp links.</p>
+      </aside>
+    </section>
+
+    <section id="s07-eval-cases">
+      <div class="slide" style="--slide-pad-inline: 48px; --slide-pad-block: 38px; --text-h2: 49px; gap: 18px">
+        <header class="slide-header">
+          <h2 style="max-inline-size: none">10 real-world test cases</h2>
+        </header>
+        <div class="slide-body">
+          <div class="eval-mix-bar" role="img" aria-label="5 typical, 3 edge, 2 attack cases"><span></span><span></span><span></span></div>
+          <div class="eval-columns" style="--eval-cols: 5fr 4fr 4fr; --text-h2: 76px; --case-size: var(--text-small); --row-pad: 7px">
+            <article class="eval-group is-agent fragment" data-fragment-index="0">
+              <header class="eval-head-stat">
+                <span class="eval-big-num">5</span><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m7.5 12 3 3 6-6"/></svg><h3 class="col-label">Typical</h3>
+              </header>
+              <ol class="eval-cases" start="1">
+                <li>Short tech talk</li>
+                <li>Two-speaker interview</li>
+                <li>Hour-long talk</li>
+                <li>Single-essay Q&amp;A</li>
+                <li>Cross-library Q&amp;A</li>
+              </ol>
+            </article>
+            <article class="eval-group fragment" data-fragment-index="1">
+              <header class="eval-head-stat">
+                <span class="eval-big-num">3</span><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 13h5l3-8 4 14 3-7h5"/></svg><h3 class="col-label">Edge</h3>
+              </header>
+              <ol class="eval-cases" start="6">
+                <li>Overlapping Italian</li>
+                <li>Short clip (&lt;3 min)</li>
+                <li>Unanswered topic</li>
+              </ol>
+            </article>
+            <article class="eval-group is-accent fragment" data-fragment-index="2">
+              <header class="eval-head-stat">
+                <span class="eval-big-num">2</span><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v5c0 5-4 8-8 10-4-2-8-5-8-10V6zM12 7v6m0 3v.1"/></svg><h3 class="col-label">Attack</h3>
+              </header>
+              <ol class="eval-cases" start="9">
+                <li>Spoken injection</li>
+                <li>HTML or bad link</li>
+              </ol>
+            </article>
+          </div>
+          <div class="fragment" data-fragment-index="3">
+            <div class="eval-target" style="--text-lead: 38px">
+              <p class="col-label text-accent">Target</p>
+              <p class="eval-goal"><span class="eval-figure">90%+</span> pass</p>
+              <p class="eval-goal"><span class="eval-figure">&lt;= 2</span> turns</p>
+              <p class="eval-goal"><span class="eval-figure">&lt; $0.20</span> / hr</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>We picked ten cases that cover what TL;DW does every day and the ways it can go wrong. Five are typical: a short talk, an interview, a long talk that must stay under the word cap, and two kinds of question. Three are edges we hit for real: overlapping Italian speech, a Short that should cost nothing, and a question the library can't answer, where the chat must still help and say what comes from general knowledge. Two are attacks: an instruction spoken inside a talk, and raw HTML or a broken link. The target is nine of ten passing, two questions or fewer per usable answer, and under 20 cents per hour of video.</p>
+        <ol>
+          <li>Short tech talk: essay states its thesis first and never mentions the video.</li>
+          <li>Interview, two speakers: questions and answers kept apart.</li>
+          <li>Talk over an hour: essay under 1,500 words.</li>
+          <li>Question on one essay: answer uses that video only.</li>
+          <li>Question across the library: each part names its video.</li>
+          <li>Italian, people talking over each other: Italian transcript, English essay, no stray script.</li>
+          <li>Clip under 3 minutes: skipped, nothing spent.</li>
+          <li>Question the library can't answer: still answers, marks general knowledge.</li>
+          <li>Spoken "ignore your instructions" in a talk: treated as quoted source text.</li>
+          <li>Script tag or malformed link: shown as text, or refused by Submit.</li>
+        </ol>
+        <p>A case passes only if every check holds. Count the reader's questions before a usable answer, including follow-ups.</p>
+      </aside>
+    </section>
+
+    <section id="s08-eval-loop">
+      <div class="slide" style="--slide-pad-inline: 48px; --slide-pad-block: 38px; --text-h2: 49px; gap: 18px">
+        <header class="slide-header">
+          <h2 style="max-inline-size: none">Measure, change one thing, measure again</h2>
+        </header>
+        <div class="slide-body">
+          <div class="eval-runs">
+            <div class="eval-heads"><span>Success rate</span><span>Avg turns</span><span>Cost per hour of video</span></div>
+            <div class="eval-run is-muted">
+              <div class="eval-change">
+                <p class="model-icons">
+                  <img class="logo-icon" src="assets/logos/googlegemini.svg" alt="Gemini">
+                  <img class="logo-icon" src="assets/logos/openrouter.svg" alt="OpenRouter">
+                  <span class="col-label">Baseline</span>
+                </p>
+                <p>Gemini Transcribe · auto language · optional search</p>
+              </div>
+              <div class="eval-metrics">
+                <div class="eval-metric"><span class="eval-figure">70%</span><span class="bench-bar"><span class="bench-fill" style="--value: 70%"></span><span class="bench-target" style="--at: 90%" aria-hidden="true"></span></span></div>
+                <div class="eval-metric"><span class="eval-figure">2.4</span></div>
+                <div class="eval-metric"><span class="eval-figure">$0.27</span></div>
+              </div>
+            </div>
+            <div class="eval-run is-agent fragment" data-fragment-index="0">
+              <div class="eval-change">
+                <p class="model-icons">
+                  <img class="logo-icon" src="assets/logos/grok.svg" alt="Grok">
+                  <img class="logo-icon" src="assets/logos/xai.svg" alt="xAI">
+                  <span class="col-label">Change 1</span>
+                </p>
+                <p>Grok STT 2.0 · 5-min chunks · language hints</p>
+              </div>
+              <div class="eval-metrics">
+                <div class="eval-metric"><span class="eval-figure">80%</span><span class="eval-delta is-agent">+10 pts</span><span class="bench-bar"><span class="bench-fill" style="--value: 80%"></span><span class="bench-target" style="--at: 90%" aria-hidden="true"></span></span></div>
+                <div class="eval-metric"><span class="eval-figure">2.1</span></div>
+                <div class="eval-metric"><span class="eval-figure">$0.10</span></div>
+              </div>
+            </div>
+            <div class="eval-run is-accent fragment" data-fragment-index="1">
+              <div class="eval-change">
+                <p class="model-icons">
+                  <img class="logo-icon" src="assets/logos/deepseek.svg" alt="DeepSeek V4.1 Flash">
+                  <img class="logo-icon" src="assets/logos/pydantic.svg" alt="PydanticAI">
+                  <img class="logo-icon" src="assets/logos/voyage.svg" alt="Voyage AI">
+                  <img class="logo-icon" src="assets/logos/openrouter.svg" alt="OpenRouter">
+                  <span class="col-label">Change 2</span>
+                </p>
+                <p>DeepSeek V4.1 Flash · mandatory search · safe HTML</p>
+              </div>
+              <div class="eval-metrics">
+                <div class="eval-metric"><span class="eval-figure">100%</span><span class="eval-delta is-agent">+20 pts</span><span class="bench-bar"><span class="bench-fill" style="--value: 100%; box-shadow: inset 0 0 0 2px var(--accent-primary-ink)"></span><span class="bench-target" style="--at: 90%" aria-hidden="true"></span></span></div>
+                <div class="eval-metric"><span class="eval-figure">1.3</span></div>
+                <div class="eval-metric"><span class="eval-figure">$0.10</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <footer class="slide-footer" style="padding-top: 12px; border-top: 1px solid var(--border-strong)">
+          <p style="max-inline-size: none">10-case suite via OpenRouter · under $0.002 per chat question.</p>
+        </footer>
+      </div>
+      <aside class="notes">
+        <p>Each change answers a failure we saw. In the baseline, Gemini 3.5 Transcribe labelled speakers on every word in one call and on a quarter of them in an identical repeat, so the interview case fails. Switching to Grok STT 2.0 fixed the speakers and cut cost from 27 to 10 cents an hour. The language hint matters too: without it, one Italian conversation drifted into Hebrew script. Change 2 moves essay generation and chat to DeepSeek V4.1 Flash and hardens the chat loop. Forcing the first search grounds the first answer, so fewer follow-ups are needed. Transcripts and search results are framed as source material, and the renderer escapes raw HTML, which it otherwise passes through untouched. A question costs well under a tenth of a cent.</p>
+        <p>The transcription costs were measured through OpenRouter in November 2026. The baseline left language detection automatic and allowed the chat to skip search. Turns count reader questions, including follow-ups. The repository records the model failures and prices but contains no scored ten-case run for the success rates and turn counts; those figures illustrate the proposed evaluation.</p>
+      </aside>
+    </section>
+
+    <section id="s09-risks">
+      <div class="slide" style="--slide-pad-inline: 48px; --slide-pad-block: 38px; --text-h2: 49px; gap: 18px">
+        <header class="slide-header">
+          <h2 style="max-inline-size: none">Four risks, built-in defenses</h2>
+        </header>
+        <div class="slide-body">
+          <div class="risk-table" style="--risk-cols: minmax(0, 2.4fr) minmax(0, 2.3fr) minmax(0, 6fr); --row-pad: 24px" role="table" aria-label="Four risks and their defenses">
+            <div class="risk-head" role="row"><span class="col-label" role="columnheader">Risk</span><span class="col-label" role="columnheader">What could go wrong</span><span class="col-label" role="columnheader">Defense in TL;DW</span></div>
+            <div class="risk-row fragment" data-fragment-index="0" role="row">
+              <h3 class="risk-name shift-item" role="rowheader"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v5c0 5-4 8-8 10-4-2-8-5-8-10V6zM12 7v6m0 3v.1"/></svg><span>Prompt injection</span></h3>
+              <p class="risk-threat" role="cell">Hidden commands in audio</p>
+              <p class="risk-defense" role="cell">Read-only tools · data-only framing · escaped HTML</p>
+            </div>
+            <div class="risk-row fragment" data-fragment-index="1" role="row">
+              <h3 class="risk-name shift-item" role="rowheader"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10" width="15" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/></svg><span>Privacy</span></h3>
+              <p class="risk-threat" role="cell">Leaked library or keys</p>
+              <p class="risk-defense" role="cell">Private VPS over SSH · no public login · closed DB</p>
+            </div>
+            <div class="risk-row fragment" data-fragment-index="2" role="row">
+              <h3 class="risk-name shift-item" role="rowheader"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="10" cy="6" rx="7" ry="3"/><path d="M3 6v5c0 2 3 3 7 3s7-1 7-3V6m-14 5v5c0 2 3 3 7 3m10-8v6c0 3-4 4-7 4"/></svg><span>Cost</span></h3>
+              <p class="risk-threat" role="cell">Runaway spend or loops</p>
+              <p class="risk-defense" role="cell">Skip Shorts · $0.10/hr STT · DeepSeek Flash · no retry loops</p>
+            </div>
+            <div class="risk-row fragment" data-fragment-index="3" role="row">
+              <h3 class="risk-name shift-item" role="rowheader"><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span>Hallucination</span></h3>
+              <p class="risk-threat" role="cell">Invented facts or quotes</p>
+              <p class="risk-defense" role="cell">Transcript-only rules · search first · video timestamps</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>Injection first. The Chat Agent's only tool reads, so an instruction hidden in a talk has nothing to act with, and the agent is told to treat search results as source material and ignore instructions inside them. Privacy comes from having nothing public: both web apps listen on the server's loopback address, the owner reaches them through one SSH tunnel, and Supabase's public key can't read the tables. Cost is capped by design: Shorts are skipped, transcription is ten cents an hour, and a failure waits for the next poll instead of looping. For hallucination, the essay rules forbid anything the transcript lacks, and the chat marks what comes from general knowledge, so the reader knows what to check.</p>
+        <p>Markdown escapes raw HTML before display. Supabase has row level security enabled and no public access policies. Secrets are redacted from error output. Transcription costs $0.10 per hour of audio; DeepSeek V4.1 Flash handles the essay and chat. When a scheduled essay fails, the next poll uses the stored transcript without paying for audio again. Retrieval uses an exact cosine scan. The standalone chat links each claim to the second it came from.</p>
+      </aside>
+    </section>
+
+    <section id="s10-demo">
+      <div class="slide" style="--slide-pad-inline: 48px; --slide-pad-block: 38px; --text-h2: 49px; gap: 18px">
+        <header class="slide-header">
+          <h2 style="max-inline-size: none">Live demo: happy path and safe failure</h2>
+        </header>
+        <div class="slide-body">
+          <div class="demo-split">
+            <article class="demo-col is-agent fragment" data-fragment-index="0">
+              <h3 class="col-label">Happy path</h3>
+              <ol class="demo-steps">
+                <li>Paste a long talk</li>
+                <li>Watch live progress</li>
+                <li>Read the 6-min essay</li>
+                <li>Ask and jump to timestamp</li>
+              </ol>
+            </article>
+            <article class="demo-col is-accent fragment" data-fragment-index="1">
+              <h3 class="col-label">Failure &amp; recovery</h3>
+              <ol class="demo-steps">
+                <li>Submit a private video</li>
+                <li>Clear error + log link</li>
+                <li>Zero partial data saved</li>
+                <li>Next run retries only what failed</li>
+              </ol>
+            </article>
+          </div>
+          <p class="editorial-takeaway fragment" data-fragment-index="2" style="max-inline-size: none">Long talks become short reads, on a server you own.</p>
+        </div>
+      </div>
+      <aside class="notes">On the left, the path we hope for. We paste a long talk into Submit, and the front page shows the current step and a rough time left, refreshing every 15 seconds. When the essay lands, it shows its video length and reading time. We ask a follow-up beside the essay, then the same question in the standalone chat, which links the exact second in the video. On the right, a controlled failure: a private video. yt-dlp can't read it, the front page links its run log for a day, and nothing is stored. When an essay fails during a scheduled poll, the transcript is kept, and the next poll writes only the essay, without paying for transcription again. A private link submitted by hand needs a new submission once it is accessible. Automatic recovery applies to a video in a followed channel.</aside>
+    </section>
+  </div>
+</main>
+
+<script src="vendor/reveal/reveal.js"></script>
+<script src="vendor/reveal/plugin/notes.js"></script>
+<script>
+  Reveal.initialize({
+    width: 1280,
+    height: 720,
+    margin: 0.06,
+    center: false,
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'fade',
+    transitionSpeed: 'fast',
+    pdfMaxPagesPerSlide: 1,
+    pdfSeparateFragments: false,
+    plugins: [RevealNotes]
+  });
+</script>
+</body>
+</html>
