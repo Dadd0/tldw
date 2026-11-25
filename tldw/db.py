@@ -59,14 +59,13 @@ def stored_video_ids(db_url: str, video_ids: list[str]) -> set[str]:
     return {row["video_id"] for row in rows}
 
 
-def get_video(db_url: str, video_id: str) -> dict | None:
-    """Return the stored row of a video keyed by column name, or None if it is not stored."""
-    rows = query(
+def delete_video(db_url: str, video_id: str) -> None:
+    """Remove a video together with its segments and essay."""
+    query(
         db_url,
-        "SELECT * FROM videos WHERE video_id = %(video_id)s",
+        "DELETE FROM videos WHERE video_id = %(video_id)s",
         {"video_id": video_id},
     )
-    return rows[0] if rows else None
 
 
 def upsert_video(db_url: str, video: dict, segments: list[dict]) -> None:
@@ -193,20 +192,22 @@ def save_essay(
 
 
 ESSAY_DETAILS_SQL = """
-    SELECT e.video_id, e.title, e.body, v.channel_name, v.duration_seconds,
-           COALESCE(v.published_at, v.created_at) AS display_date
+    SELECT e.video_id, e.title, e.body, e.created_at AS added_at, v.channel_name,
+           v.duration_seconds, COALESCE(v.published_at, v.created_at) AS display_date
     FROM essays AS e
     JOIN videos AS v ON v.video_id = e.video_id
 """
 
 
 def list_essays(db_url: str, *, limit: int, offset: int) -> list[dict]:
-    """Return a page of essays with their video details, newest first."""
+    """Return a page of essays, newest first, marking the one added most recently."""
     return query(
         db_url,
-        ESSAY_DETAILS_SQL
+        "SELECT d.*, d.added_at = max(d.added_at) OVER () AS latest FROM ("
+        + ESSAY_DETAILS_SQL
         + """
-        ORDER BY display_date DESC, e.video_id
+        ) AS d
+        ORDER BY display_date DESC, video_id
         LIMIT %(limit)s OFFSET %(offset)s
         """,
         {"limit": limit, "offset": offset},
@@ -221,6 +222,16 @@ def get_essay(db_url: str, video_id: str) -> dict | None:
         {"video_id": video_id},
     )
     return rows[0] if rows else None
+
+
+def existing_essay_ids(db_url: str, video_ids: list[str]) -> set[str]:
+    """Return submitted video IDs with an essay, regardless of its front-page rank."""
+    rows = query(
+        db_url,
+        "SELECT video_id FROM essays WHERE video_id = ANY(%(video_ids)s)",
+        {"video_ids": video_ids},
+    )
+    return {row["video_id"] for row in rows}
 
 
 def pending_embedding_video_ids(db_url: str) -> list[str]:

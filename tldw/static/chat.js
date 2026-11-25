@@ -1,26 +1,39 @@
 const workspace = document.querySelector("#workspace");
 const readView = document.querySelector("#read-view");
 const chat = document.querySelector("#chat");
-const divider = document.querySelector("#chat-divider");
 const title = document.querySelector("#chat-title");
 const form = document.querySelector("#chat-form");
 const turns = document.querySelector("#chat-turns");
-const scope = document.querySelector("#chat-scope");
-const essayLabel = document.querySelector("#chat-essay");
-const selectionPreview = document.querySelector("#chat-selection");
 const question = document.querySelector("#chat-question");
 const send = document.querySelector("#send-question");
 const retry = document.querySelector("#retry-question");
 const status = document.querySelector("#chat-status");
-const close = document.querySelector("#close-chat");
-const expand = document.querySelector("#expand-chat");
-const back = document.querySelector("#back-to-read");
-const modeLinks = document.querySelectorAll(".site-modes a");
-const askPath = "/ask";
+const spinner = document.querySelector("#chat-spinner");
+const sidebar = document.querySelector("#chat-history");
+const chatList = document.querySelector("#chat-list");
+const openButton = readView.querySelector("[data-open-chat]");
+const essay = readView.querySelector("article[data-video-id]")?.dataset;
+const workingMessages = [
+  "Skimming the transcript…",
+  "Fast-forwarding past the sponsor read…",
+  "Looking for the short version…",
+  "Asking the speaker to get to the point…",
+  "Untangling the microphones…",
+  "Reticulating timestamps…",
+  "Skipping the obligatory introductions…",
+  "Checking who said that…",
+  "Following a promising tangent…",
+  "Finding the end of that tangent…",
+  "Turning the playback speed up to read…",
+  "Picking the footnotes out of the audio…",
+  "Giving the rewind button a break…",
+  "Reuniting a claim with its timestamp…",
+  "Saving you the outro…",
+];
 
 function load(key, fallback) {
   try {
-    return JSON.parse(sessionStorage.getItem("tldw." + key)) ?? fallback;
+    return JSON.parse(localStorage.getItem("tldw." + key)) ?? fallback;
   } catch {
     return fallback;
   }
@@ -28,219 +41,88 @@ function load(key, fallback) {
 
 function save(key, value) {
   try {
-    sessionStorage.setItem("tldw." + key, JSON.stringify(value));
+    localStorage.setItem("tldw." + key, JSON.stringify(value));
   } catch {
     // The open document still has the conversation if storage is unavailable.
+    // shortcut: chats are never deleted, so a full localStorage (about 5 MB) stops saving; add deletion then.
   }
 }
 
-const emptyThread = () => ({ mode: null, essay: null, selectedText: "", turns: [], draft: "", retryScope: null });
-const currentPath = () => location.pathname + location.search;
-const currentEssay = () => readView.querySelector("article[data-video-id]")?.dataset;
-const readTarget = () => load("lastEssay", currentEssay() ? readPath : "/");
+const readStore = () => load("chats", { current: null, chats: [] });
+const currentChat = () =>
+  store.chats.find((chat) => chat.id === store.current) ??
+  { id: String(Date.now()), title: "", updated: Date.now(), turns: [], draft: "", unanswered: false };
 
-let thread = load("thread", emptyThread());
-let mode = workspace.dataset.mode;
-let readPath = mode === "read" ? currentPath() : null;
-let readTitle = mode === "read" ? document.title : "TL;DW";
-let panelOpen = false;
-let selectedText = "";
+let store = readStore();
+let thread = currentChat();
 let request = null;
-let navigation = 0;
-let restoreFrame = 0;
-let layoutWidth = window.innerWidth;
+let readingY = 0;
+let messageIndex = 0;
 
-function rememberReading() {
-  const essay = currentEssay();
-  if (!essay || !readView.getClientRects().length || restoreFrame) return;
-  const blocks = Array.from(readView.querySelector(".essay-body").children);
-  const block = window.scrollY ? blocks.findIndex((item) => item.getBoundingClientRect().bottom > 0) : -1;
-  const offset = block === -1 ? window.scrollY : -blocks[block].getBoundingClientRect().top;
-  save("reading." + essay.videoId, { block, offset });
+function saveThread() {
+  // Another tab may have saved since this one loaded, so merge into the stored list.
+  store = readStore();
+  store.chats = [thread, ...store.chats.filter((chat) => chat.id !== thread.id && chat.turns.length)];
+  store.current = thread.id;
+  save("chats", store);
+  showHistory();
 }
 
-function restoreReading() {
-  cancelAnimationFrame(restoreFrame);
-  restoreFrame = requestAnimationFrame(() => {
-    if (readView.getClientRects().length) {
-      const essay = currentEssay();
-      const position = essay && load("reading." + essay.videoId, null);
-      const block = position && readView.querySelector(".essay-body").children[position.block];
-      const top = block
-        ? window.scrollY + block.getBoundingClientRect().top + Math.min(position.offset, block.offsetHeight - 1)
-        : position?.offset ?? 0;
-      window.scrollTo({ top, behavior: "instant" });
-    }
-    restoreFrame = requestAnimationFrame(() => { restoreFrame = 0; });
+function showHistory() {
+  if (!chatList) return;
+  const items = store.chats.toSorted((a, b) => b.updated - a.updated).map((chat) => {
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    const date = document.createElement("time");
+    const updated = new Date(chat.updated);
+    button.type = "button";
+    button.dataset.chatId = chat.id;
+    button.textContent = chat.title || "New chat";
+    if (chat.id === thread.id) button.setAttribute("aria-current", "true");
+    date.dateTime = updated.toISOString();
+    date.textContent = updated.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    item.append(button, " ", date);
+    return item;
   });
+  chatList.replaceChildren(...items);
 }
 
-function updateSelection() {
-  const button = readView.querySelector("[data-ask-selection]");
-  const body = readView.querySelector(".essay-body");
-  const selection = window.getSelection();
-  selectedText = "";
-  if (mode === "read" && selection?.rangeCount === 1 &&
-      body?.contains(selection.anchorNode) && body.contains(selection.focusNode)) {
-    selectedText = selection.toString().trim();
-  }
-  if (button) button.hidden = !selectedText;
+function openChat(id) {
+  request?.abort();
+  request = null;
+  store = readStore();
+  store.current = id;
+  thread = currentChat();
+  saveThread();
+  loadThread();
+  question.focus();
 }
 
-function updateContext() {
-  const essayScoped = thread.mode === "essay" || thread.mode === "selected";
-  scope.value = thread.mode ?? "all";
-  scope.options[1].disabled = !thread.essay;
-  scope.options[2].disabled = !thread.selectedText;
-  essayLabel.hidden = !essayScoped;
-  essayLabel.textContent = essayScoped ? thread.essay.title : "";
-  selectionPreview.hidden = thread.mode !== "selected";
-  selectionPreview.textContent = selectionPreview.hidden ? "" : thread.selectedText;
+sidebar?.addEventListener("click", (event) => {
+  const id = event.target.closest("[data-chat-id]")?.dataset.chatId;
+  if (id || event.target.closest("#new-chat")) openChat(id);
+});
 
-  const essay = currentEssay();
-  const openButton = readView.querySelector("[data-open-chat]");
-  if (openButton) {
-    openButton.hidden = panelOpen || !thread.mode;
-    openButton.setAttribute("aria-expanded", String(panelOpen));
-  }
-  const canSwitch = essay && (!essayScoped || thread.essay?.id !== essay.videoId);
-  const essayButton = readView.querySelector("[data-ask-essay]");
-  if (essayButton) essayButton.hidden = !canSwitch || panelOpen;
-  chat.querySelector("[data-ask-essay]").hidden = !canSwitch || !panelOpen;
+function setPanel(open) {
+  workspace.classList.toggle("panel-open", open);
+  chat.hidden = !open;
+  openButton.hidden = open;
+  openButton.setAttribute("aria-expanded", String(open));
 }
 
-function updateView() {
-  workspace.dataset.mode = mode;
-  workspace.classList.toggle("panel-open", panelOpen);
-  readView.hidden = mode === "ask";
-  chat.hidden = mode === "read" && !panelOpen;
-  divider.hidden = !panelOpen;
-  close.hidden = expand.hidden = mode === "ask";
-  back.hidden = mode === "read";
-  back.href = readTarget();
-  for (const link of modeLinks) {
-    if (link.dataset.show === mode) link.setAttribute("aria-current", "page");
-    else link.removeAttribute("aria-current");
-    if (link.dataset.show === "read") link.href = mode === "ask" ? readTarget() : "/";
-  }
-  document.title = mode === "ask" ? "Ask · TL;DW" : readTitle;
-  updateContext();
-  updateSelection();
-}
-
-function focusReading() {
-  const heading = readView.querySelector("h1") ?? document.querySelector(".site-modes [data-show='read']");
-  heading.focus({ preventScroll: true });
-}
-
-function showAsk(push) {
-  navigation++;
-  if (mode === "ask") return;
-  rememberReading();
-  if (!thread.mode) {
-    thread.mode = "all";
-    save("thread", thread);
-  }
-  if (push) history.pushState(null, "", askPath);
-  panelOpen = false;
-  mode = "ask";
-  updateView();
-  window.scrollTo(0, 0);
+openButton.addEventListener("click", () => {
+  readingY = window.scrollY;
+  setPanel(true);
   scrollConversation();
   title.focus({ preventScroll: true });
-}
-
-async function showRead(target, push) {
-  const transition = ++navigation;
-  if (target !== readPath) {
-    try {
-      let response = await fetch(target);
-      if (response.status === 404 && target !== "/") {
-        target = "/";
-        response = await fetch(target);
-      }
-      if (!response.ok) throw new Error("Read page unavailable");
-      const page = new DOMParser().parseFromString(await response.text(), "text/html");
-      if (transition !== navigation) return;
-      readView.replaceChildren(...page.getElementById("read-view").childNodes);
-      readTitle = page.title;
-      readPath = target;
-      if (currentEssay()) save("lastEssay", target);
-      else if (target === "/") save("lastEssay", "/");
-    } catch {
-      if (transition === navigation) {
-        status.textContent = "Couldn't open Read. Try again.";
-      }
-      return;
-    }
-  }
-  if (push) history.pushState(null, "", target);
-  else if (currentPath() !== target) history.replaceState(null, "", target);
-  panelOpen = false;
-  mode = "read";
-  updateView();
-  restoreReading();
-  focusReading();
-}
-
-function openPanel(context) {
-  rememberReading();
-  if (context) {
-    const essay = currentEssay();
-    if (thread.essay?.id !== essay.videoId) thread.selectedText = "";
-    thread.essay = { id: essay.videoId, title: essay.essayTitle };
-    thread.mode = context;
-    if (context === "selected") thread.selectedText = selectedText;
-    save("thread", thread);
-  }
-  panelOpen = true;
-  updateView();
-  if (readView.getClientRects().length) restoreReading();
-  else window.scrollTo(0, 0);
-  scrollConversation();
-  const focusTarget = context === "selected" ? question : title;
-  focusTarget.focus({ preventScroll: true });
-}
-
-document.addEventListener("selectionchange", updateSelection);
-readView.addEventListener("pointerdown", (event) => {
-  if (event.target.closest("[data-ask-selection]")) event.preventDefault();
 });
 
-workspace.addEventListener("click", (event) => {
-  if (event.target.closest("[data-ask-selection]") && selectedText) {
-    openPanel("selected");
-    window.getSelection()?.removeAllRanges();
-  } else if (event.target.closest("[data-ask-essay]")) openPanel("essay");
-  else if (event.target.closest("[data-open-chat]")) openPanel();
-});
-
-close.addEventListener("click", () => {
-  rememberReading();
-  panelOpen = false;
-  updateView();
-  restoreReading();
-  readView.querySelector("[data-open-chat]").focus({ preventScroll: true });
-});
-
-document.addEventListener("click", (event) => {
-  const link = event.target.closest("a[data-show]");
-  if (!link || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-  if (link.dataset.show === "read" && mode === "read") return;
-  event.preventDefault();
-  if (link.dataset.show === "ask") showAsk(true);
-  else void showRead(readTarget(), true);
-});
-
-window.addEventListener("popstate", () => {
-  if (location.pathname === askPath) showAsk(false);
-  else void showRead(currentPath(), false);
-});
-
-scope.addEventListener("change", () => {
-  thread.mode = scope.value;
-  save("thread", thread);
-  updateContext();
+document.querySelector("#close-chat").addEventListener("click", () => {
+  // On narrow screens the panel replaces the page, which loses the scroll position.
+  const wasReplaced = !readView.getClientRects().length;
+  setPanel(false);
+  if (wasReplaced) window.scrollTo(0, readingY);
+  openButton.focus({ preventScroll: true });
 });
 
 function appendTurn(turn) {
@@ -250,9 +132,10 @@ function appendTurn(turn) {
   prompt.className = "chat-question";
   prompt.textContent = turn.question;
   answer.className = "chat-answer";
-  answer.innerHTML = turn.html;
+  if (turn.html) answer.innerHTML = turn.html;
   item.append(prompt, answer);
   turns.append(item);
+  return answer;
 }
 
 function scrollConversation() {
@@ -264,40 +147,72 @@ function updateComposer() {
   question.value = thread.draft;
   question.readOnly = Boolean(request);
   send.disabled = Boolean(request);
-  retry.hidden = Boolean(request) || !thread.retryScope;
+  spinner.hidden = !request;
+  retry.hidden = Boolean(request) || !thread.unanswered;
 }
 
 function loadThread() {
-  if (mode === "ask" && !thread.mode) {
-    thread.mode = "all";
-    save("thread", thread);
-  }
   turns.replaceChildren();
   for (const turn of thread.turns) appendTurn(turn);
-  status.textContent = thread.retryScope ? "Question ready to retry." : "";
-  updateView();
+  status.textContent = thread.unanswered ? "Question ready to retry." : "";
   updateComposer();
+  showHistory();
   scrollConversation();
 }
 
 question.addEventListener("input", () => {
   thread.draft = question.value;
-  thread.retryScope = null;
+  thread.unanswered = false;
   retry.hidden = true;
   status.textContent = "";
-  save("thread", thread);
+  saveThread();
 });
 
-async function sendQuestion(context) {
+async function readReply(response, preview) {
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result.error ?? "Couldn't answer right now. Try again.");
+  }
+  const log = turns.parentElement;
+  let pending = "";
+  for await (const chunk of response.body.pipeThrough(new TextDecoderStream())) {
+    const lines = (pending + chunk).split("\n");
+    pending = lines.pop();
+    const atBottom = log.scrollHeight - log.clientHeight - log.scrollTop < 8;
+    for (const line of lines) {
+      const event = JSON.parse(line);
+      if (event.error) throw new Error(event.error);
+      if (typeof event.answer === "string" && typeof event.html === "string") return event;
+      if (event.clear) preview.data = "";
+      if (typeof event.delta === "string") preview.appendData(event.delta);
+    }
+    if (atBottom) scrollConversation();
+  }
+  throw new Error("Couldn't read the reply. Try again.");
+}
+
+function showWorkingMessage() {
+  status.textContent = workingMessages[messageIndex];
+  messageIndex = (messageIndex + 1) % workingMessages.length;
+}
+
+async function sendQuestion() {
   const text = question.value.trim();
   if (!text || request) return;
   const controller = new AbortController();
   request = controller;
+  thread.title ||= text.slice(0, 80);
   thread.draft = text;
-  thread.retryScope = context;
-  save("thread", thread);
+  thread.unanswered = true;
+  saveThread();
   updateComposer();
-  status.textContent = "Waiting for a reply…";
+  showWorkingMessage();
+  const timer = window.setInterval(showWorkingMessage, 2000);
+  const answer = appendTurn({ question: text });
+  const preview = document.createTextNode("");
+  answer.append(preview);
+  answer.setAttribute("aria-busy", "true");
+  scrollConversation();
 
   try {
     const response = await fetch("/api/ask", {
@@ -305,31 +220,32 @@ async function sendQuestion(context) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         question: text,
-        context,
+        // An essay's panel asks about that essay; every other page asks about everything.
+        context: essay ? { mode: "essay", video_id: essay.videoId } : { mode: "all" },
         turns: thread.turns.map(({ question, answer }) => ({ question, answer })),
       }),
       signal: controller.signal,
     });
-    const result = await response.json().catch(() => ({}));
-    if (request !== controller || controller.signal.aborted) return;
-    if (!response.ok) throw new Error(result.error ?? "Couldn't answer right now. Try again.");
-    if (typeof result.answer !== "string" || typeof result.html !== "string") {
-      throw new Error("Couldn't read the reply. Try again.");
-    }
+    const result = await readReply(response, preview);
+    controller.signal.throwIfAborted();
     const turn = { question: text, answer: result.answer, html: result.html };
     thread.turns.push(turn);
     thread.draft = "";
-    thread.retryScope = null;
-    save("thread", thread);
-    appendTurn(turn);
-    scrollConversation();
+    thread.unanswered = false;
+    thread.updated = Date.now();
+    saveThread();
+    answer.innerHTML = result.html;
+    answer.removeAttribute("aria-busy");
     status.textContent = "";
   } catch (error) {
+    answer.parentElement?.remove();
     if (!controller.signal.aborted) {
       status.textContent = error instanceof TypeError ? "Couldn't connect. Try again." : error.message;
     }
   } finally {
-    if (request === controller && !controller.signal.aborted) {
+    window.clearInterval(timer);
+    if (request === controller) {
+      if (controller.signal.aborted) status.textContent = "";
       request = null;
       updateComposer();
     }
@@ -338,64 +254,10 @@ async function sendQuestion(context) {
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
-  const context = { mode: thread.mode ?? "all" };
-  if (context.mode !== "all") context.video_id = thread.essay.id;
-  if (context.mode === "selected") context.selected_text = thread.selectedText;
-  void sendQuestion(context);
+  void sendQuestion();
 });
 
-retry.addEventListener("click", () => void sendQuestion(thread.retryScope));
-
-const minChatWidth = Number(divider.getAttribute("aria-valuemin"));
-const maxChatWidth = Number(divider.getAttribute("aria-valuemax"));
-
-function resizeChat(width) {
-  const share = Math.round(Math.max(minChatWidth, Math.min(maxChatWidth, width)));
-  if (share === Number(divider.getAttribute("aria-valuenow"))) return;
-  workspace.style.setProperty("--chat-width", `${share}%`);
-  divider.setAttribute("aria-valuenow", String(share));
-  divider.setAttribute("aria-valuetext", `${share}%`);
-  restoreReading();
-}
-
-divider.addEventListener("pointerdown", (event) => {
-  if (event.button !== 0 || !event.isPrimary) return;
-  event.preventDefault();
-  divider.focus({ preventScroll: true });
-  rememberReading();
-  divider.setPointerCapture(event.pointerId);
-});
-
-divider.addEventListener("pointermove", (event) => {
-  if (!divider.hasPointerCapture(event.pointerId)) return;
-  const bounds = workspace.getBoundingClientRect();
-  const width = bounds.right - event.clientX - divider.offsetWidth / 2;
-  resizeChat(100 * width / bounds.width);
-});
-
-divider.addEventListener("keydown", (event) => {
-  const width = Number(divider.getAttribute("aria-valuenow"));
-  const next = {
-    ArrowLeft: width + 2,
-    ArrowRight: width - 2,
-    Home: minChatWidth,
-    End: maxChatWidth,
-  }[event.key];
-  if (next === undefined) return;
-  event.preventDefault();
-  rememberReading();
-  resizeChat(next);
-});
-
-window.addEventListener("scroll", () => {
-  if (layoutWidth === window.innerWidth) rememberReading();
-}, { passive: true });
-window.addEventListener("resize", () => {
-  if (layoutWidth === window.innerWidth) return;
-  layoutWidth = window.innerWidth;
-  restoreReading();
-  if (panelOpen && !readView.getClientRects().length) window.scrollTo(0, 0);
-});
+retry.addEventListener("click", () => void sendQuestion());
 
 function updateViewport() {
   workspace.style.setProperty("--chat-viewport", window.visualViewport.height + "px");
@@ -406,23 +268,29 @@ if (window.visualViewport) {
   updateViewport();
 }
 
-window.addEventListener("pagehide", () => {
-  rememberReading();
-  request?.abort();
-});
+window.addEventListener("pagehide", () => request?.abort());
+
+function reloadChats() {
+  store = readStore();
+  thread = currentChat();
+  loadThread();
+}
+
 window.addEventListener("pageshow", (event) => {
   if (!event.persisted) return;
   request = null;
-  thread = load("thread", thread);
-  if (mode === "read" && currentEssay()) save("lastEssay", readPath);
-  loadThread();
-  restoreReading();
+  reloadChats();
+});
+// Follow changes made in other tabs, except while a reply is streaming into this one.
+window.addEventListener("storage", (event) => {
+  if (event.key === "tldw.chats" && !request) reloadChats();
 });
 
-history.scrollRestoration = "manual";
-loadThread();
-const essay = currentEssay();
-if (mode === "read" && essay) {
-  save("lastEssay", readPath);
-  if (load("reading." + essay.videoId, null)) restoreReading();
+if (sidebar && matchMedia("(max-width: 750px)").matches) sidebar.open = false;
+
+if (workspace.dataset.mode === "ask") document.querySelector("#back-to-read").href = load("readPath", "/");
+else {
+  save("readPath", location.pathname + location.search);
+  setPanel(false);
 }
+loadThread();

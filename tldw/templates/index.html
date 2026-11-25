@@ -1,6 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
+  {% if pending %}
+    <ul class="essays submissions" aria-label="Submitted videos">
+      {% for row in pending %}
+        <li>
+          {% if row.processing %}<span class="submission-spinner" aria-hidden="true"></span>{% endif %}
+          {{ row.title }}
+          <p class="details">
+            {% if row.processing %}{{ row.progress }}{% else %}failed, see <a href="{{ url_for('submission_log', video_id=row.video_id).path }}">logs/{{ row.video_id }}.log</a>{% endif %} ·
+            submitted <time datetime="{{ row.submitted_at.isoformat() }}">{{ row.submitted_at | format_age(now) }}</time>
+          </p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
   {% if essays %}
     <ol class="essays" start="{{ first_rank }}" aria-label="Essays">
       {% for essay in essays %}
@@ -8,11 +22,12 @@
           <a class="essay-title" href="{{ url_for('essay', video_id=essay.video_id) }}">
             {{ essay.title }}
           </a>
+          {% if essay.latest %}<span class="latest">new</span>{% endif %}
           {{ essay_details(essay, now) }}
         </li>
       {% endfor %}
     </ol>
-  {% else %}
+  {% elif not pending %}
     <p>No essays on this page.</p>
   {% endif %}
 

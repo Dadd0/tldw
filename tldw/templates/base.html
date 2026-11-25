@@ -14,72 +14,118 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% if processing %}<meta http-equiv="refresh" content="15">{% endif %}
   <title>{% block title %}TL;DW{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', path='favicon.svg').path }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', path='chat.css').path }}">
+  {% if mode != "submit" %}
   <script type="module" src="{{ url_for('static', path='chat.js').path }}"></script>
+  {% endif %}
   <style>
     body {
       margin: 0;
+      background: #fff;
+      color: #000;
+      font: 10pt Verdana, Geneva, sans-serif;
+    }
+    a { color: #000; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page {
+      width: 85%;
+      margin: 8px auto 0;
       background: #f6f6ef;
-      color: #242420;
-      font: 10pt/1.6 Verdana, sans-serif;
     }
-    a { color: inherit; }
-    .site-header { background: #ff6600; }
-    .site-header nav, main {
-      width: min(52rem, calc(100% - 2rem));
-      margin-inline: auto;
-    }
-    .site-header nav {
+    .site-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      min-height: 3.25rem;
+      gap: 10px;
+      padding: 2px 4px;
+      background: #ff6600;
+      line-height: 18px;
     }
-    .brand {
-      font-size: 1.15rem;
-      font-weight: bold;
-      text-decoration: none;
-    }
-    main { padding-block: 1.5rem 3rem; }
-    .essays { margin: 0; padding-inline-start: 2.5rem; }
-    .essays li {
-      padding: .75rem 0 .75rem .4rem;
-      border-bottom: 1px solid #deded3;
-    }
-    .essay-title { font-weight: bold; }
-    .details { color: #55554b; margin: .2rem 0 0; }
+    .brand { font-weight: bold; }
+    main { padding: 10px 4px 16px; }
+    .essays { margin: 0; padding-inline-start: 3em; }
+    .essays li { margin-bottom: 5px; }
+    .essays li::marker { color: #828282; }
+    .essay-title:visited { color: #828282; }
+    .latest { margin-left: 4px; color: #ff6600; font-size: 7pt; font-weight: bold; }
+    .details { color: #828282; font-size: 7pt; margin: 2px 0 0; }
+    .details a { color: #828282; }
     .details time { white-space: nowrap; }
-    .more { margin: 1.25rem 0 0 2.9rem; }
-    article { max-width: 44rem; margin-inline: auto; overflow-wrap: anywhere; }
-    article h1 {
-      margin: 0 0 .5rem;
-      font-size: clamp(1.6rem, 5vw, 2.2rem);
-      line-height: 1.2;
-    }
-    .essay-body { margin-top: 1.5rem; font-size: 1rem; line-height: 1.7; }
+    .more { margin: 10px 0 0 3em; }
+    article { overflow-wrap: anywhere; }
+    article h1 { margin: 0; font-size: 12pt; }
+    .essay-body { margin-top: 12px; line-height: 1.5; }
+    .essay-body h2, .essay-body h3 { font-size: 10pt; margin: 1.5em 0 .5em; }
+    .essay-body a { text-decoration: underline; }
     .essay-body img { max-width: 100%; }
     .essay-body pre { overflow-x: auto; }
+    .toc { display: none; color: #828282; font-size: 9pt; line-height: 1.45; }
+    .toc ol { margin: 0; padding: 0; list-style: none; }
+    .toc li { margin-bottom: 10px; }
+    .toc a { display: block; color: #555; }
+    .toc a::before { content: counter(list-item) "."; display: inline-block; width: 2em; text-indent: 0; color: #828282; }
+    @media (max-width: 750px) { .page { width: 100%; margin-top: 0; } }
+    /* Contents column only when there is room beside the essay and the chat panel is closed. */
+    @media (min-width: 751px) {
+      #workspace:not(.panel-open) #read-view:has(> .toc) {
+        display: grid;
+        grid-template-columns: 2em minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+      }
+      /* A viewport-tall sticky column keeps the list centered on screen while scrolling. */
+      #workspace:not(.panel-open) .toc {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 100dvh;
+      }
+      /* Collapsed to its numbers; hovering or tabbing in shows the titles over the essay. */
+      #workspace:not(.panel-open) .toc a { font-size: 0; }
+      #workspace:not(.panel-open) .toc a::before { font-size: 9pt; }
+      #workspace:not(.panel-open) .toc ol:is(:hover, :focus-within) {
+        width: 16em;
+        margin-left: -8px;
+        padding: 8px 12px 0 8px;
+        border: 1px solid #e0e0d6;
+        background: #f6f6ef;
+      }
+      #workspace:not(.panel-open) .toc ol:is(:hover, :focus-within) a {
+        padding-left: 2em;
+        text-indent: -2em;
+        font-size: 9pt;
+      }
+    }
   </style>
 </head>
 <body>
-  <header class="site-header">
-    <nav aria-label="Main">
+  <div class="page">
+    <header class="site-header">
       <a class="brand" href="{{ url_for('index') }}">TL;DW</a>
-      <div class="site-modes">
-        <a href="/" data-show="read"{% if mode != 'ask' %} aria-current="page"{% endif %}>Read</a>
-        <a href="/ask" data-show="ask"{% if mode == 'ask' %} aria-current="page"{% endif %}>Ask</a>
+      <nav class="site-modes" aria-label="Main">
+        <a href="/"{% if mode not in ('ask', 'submit') %} aria-current="page"{% endif %}>read</a>
+        <a href="/ask"{% if mode == 'ask' %} aria-current="page"{% endif %}>ask</a>
+        <a href="/submit"{% if mode == 'submit' %} aria-current="page"{% endif %}>submit</a>
+      </nav>
+    </header>
+    <main id="workspace" data-mode="{{ mode | default('read') }}">
+      <div id="read-view"{% if mode == 'ask' %} hidden{% endif %}>
+        {% block content %}{% endblock %}
+        {% if mode != "submit" %}
+        <button type="button" class="chat-launcher" data-open-chat aria-controls="chat" aria-label="Open chat" hidden>
+          <img src="{{ url_for('static', path='chat-icon.png').path }}" alt="">
+        </button>
+        {% endif %}
       </div>
-    </nav>
-  </header>
-  <main id="workspace" data-mode="{{ mode | default('read') }}">
-    <div id="read-view"{% if mode == 'ask' %} hidden{% endif %}>
-      {% block content %}{% endblock %}
-    </div>
-    <div id="chat-divider" role="separator" tabindex="0" aria-label="Chat width"
-         aria-controls="chat" aria-orientation="vertical" aria-valuemin="32"
-         aria-valuemax="50" aria-valuenow="35" aria-valuetext="35%" hidden></div>
-    {% include "chat.html" %}
-  </main>
+      {% if mode != "submit" %}
+      {% include "chat.html" %}
+      {% endif %}
+    </main>
+  </div>
 </body>
 </html>

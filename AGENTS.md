@@ -44,9 +44,8 @@ Do not build any of these unless the owner asks:
 - `transcribe` writes the essay after saving the transcript. After scanning the feeds, `poll` writes essays for stored transcripts that still need one.
 - Stage 3 embeds segments of 20 words or more: `transcribe` runs it after the essay, and `poll` runs it for every video with unembedded segments. A live run with `mongodb/voyage-4-lite` stored 1024-dimension vectors for all 9 eligible segments, and a cosine search for "astronauts landing on the moon" returned the Apollo 11 landing segment first. That run called `embed_video` directly. The stage 3 path through `poll` and `transcribe` has not been run live yet: confirm it on the next real poll that has new segments.
 - The private front page lists saved essays and renders them as HTML. A local browser check passed with an essay stored in Supabase.
-- The private chat searches embedded transcript segments and links to essays and timestamped YouTube videos. A local browser check used the Apollo 11 transcript.
-- The site includes an essay chat panel and an Ask page that share one conversation per browser tab.
-- The essay panel supports questions about selected text and can be resized with a pointer or keyboard on wide screens.
+- The private chat searches embedded transcript segments and streams answers grounded in them. A local browser check used the Apollo 11 transcript.
+- The site includes an essay chat panel and an Ask page that share a list of chats kept in the browser's `localStorage`.
 
 ## Tech stack
 
@@ -150,7 +149,7 @@ Three stages. Each decides what to do from what is stored, so work that failed i
 `pipeline.py` has one function per stage, each taking one video. The commands call them like this:
 
 - `poll` takes a non-blocking exclusive lock on `.poll.lock` and exits 0 silently if another poll holds it. It then runs stage 1 for every new video of every channel, then stage 2 for every video the stage 2 query returns, then stage 3 likewise. Stages 2 and 3 look at the whole database, not only at the videos found in this poll.
-- `transcribe <video>` runs stages 1, 2 and 3 for that video, whether or not it is already stored.
+- `transcribe <video>` runs stages 1, 2 and 3 for that video, whether or not it is already stored. If stage 2 or 3 fails, it deletes the video with its segments and essay, so a failed run leaves nothing stored. The submit page uses this command. `poll` keeps a transcript whose essay or embedding failed, so the next poll retries those stages without paying for transcription again.
 - `write <video-id>` runs stage 2 for that video, replacing its essay. If the video is not stored with status `transcribed`, it prints an error and exits with code 2.
 
 ### Finding new videos
@@ -166,7 +165,7 @@ So a newly added channel gets exactly its latest video, an outage is caught up f
 
 ### Stage 1: transcribe
 
-All files live in a temporary directory that is removed when the video finishes.
+Downloaded audio and chunks live in a temporary directory that is removed when the video finishes. A full `transcribe` run flushes a `PROGRESS` line to stdout at metadata lookup, download (duration and expected chunk count), each transcription chunk (current/total), saving, essay writing, embedding, and completion. A `--max-minutes` preview prints only its timestamped segments.
 
 1. **Metadata.** Ask yt-dlp for the video's ID, channel ID, channel name, title, duration and publish time, without downloading.
 2. **Duration filter (poll only).** Under 180 seconds: store a row with status `skipped` and stop. This drops Shorts, which can be up to 3 minutes long, without re-checking them on every poll. There is no upper limit; a 4-hour video is transcribed.
@@ -288,35 +287,39 @@ Known and accepted:
 
 ## Front page
 
-`site.py` builds a Starlette app with three pages rendered on the server with Jinja2. The chat views use native JavaScript and CSS.
+`site.py` builds a Starlette app with four pages rendered on the server with Jinja2. The chat views use native JavaScript and CSS.
 
-**`/`** lists essays newest first by the video's publish time (the row's creation time when the publish time is unknown), 30 per page, with a "More" link to `/?p=2`. The design uses an orange (`#ff6600`) top bar, a `#f6f6ef` background, Verdana at 10pt, and a numbered list. The top bar holds the name "TL;DW" and the **Read** and **Ask** links. Each row is:
+**`/`** lists essays newest first by the video's publish time (the row's creation time when the publish time is unknown), 30 per page, with a "More" link to `/?p=2`. The design uses an orange (`#ff6600`) top bar, a `#f6f6ef` background, Verdana at 10pt, and a numbered list. The top bar holds the name "TL;DW" and the **Read**, **Ask** and **Submit** links. Each row is:
 
 ```
 1. Essay title
-   Channel name | 1h 42m video | 6 min read | 3 hours ago | video
+   Channel name | 1h 42m video | 6 min read | 3 hours ago
 ```
 
-The title links to the essay page and "video" links to YouTube. Reading time is the essay's word count divided by 230, rounded up.
+The title links to the essay page. Reading time is the essay's word count divided by 230, rounded up.
 
 **`/essay/{video_id}`** shows the essay title, the same line of details, and the body rendered with `MarkdownIt("commonmark", {"html": False})`. The option matters: without it, markdown-it-py passes raw HTML in the essay straight into the page.
 
-Selecting a passage in the essay body reveals **Ask about selected text**. The excerpt stays beside the question field after **Expand to Ask**. On wide screens, drag the divider or focus it and use Left and Right to resize the chat. Home and End set the minimum and maximum chat width.
+**`/submit`** accepts an 11-character video ID or a YouTube watch, youtu.be, shorts or live URL. A same-origin form POST on the loopback site starts `uv run main.py transcribe <video>` in a detached process from the project root and redirects to a confirmation page. Each run replaces the git-ignored `logs/<video_id>.log` with its output and errors. Submitting a stored video again replaces its transcript and essay, just as the CLI does.
 
-**`/ask`** shows the chat in the main area. The essay panel and Ask share the conversation and selected context in `sessionStorage`. Changing modes keeps an in-flight reply running. **Back to Read** restores the last essay and reading position, or opens the home page.
+While a submitted video has no essay, the front page shows its latest logged step and rough time left. The page refreshes every 15 seconds while a row is processing. A failed row links to its log for a day. Restarting the site clears the in-memory submission list.
+
+**`/ask`** shows the chat in the main area, beside a sidebar that lists the saved chats newest first, opens the one clicked, and starts an empty one with **new chat**. Chats are kept in `localStorage` under one key, `tldw.chats`, so they survive browser restarts and every tab sees them. The key holds the ID of the current chat and the list of chats, each with an ID, a title taken from its first question, the time of its last answer and its turns. The essay panel shows the current chat, so one chat can continue on either page. There is no context selector: a question sent from an essay's panel is about that essay, and a question sent from `/ask` or from the panel on the home page searches everything. A retry uses the page it is sent from. A chat with no answers is dropped once another chat is used; other chats are never deleted. Read and Ask are separate server-rendered pages joined by plain links; `chat.js` handles only the chat. Leaving a page or opening another chat cancels a reply that is still in flight, and the question is kept ready to retry. **Back to Read** links to the last Read page visited, or to the home page.
 
 ## Chat
 
-`answering.py` builds the agent using `CHAT_MODEL_ID`. The blog's `POST /api/ask` accepts a question, the selected context, and the completed turns. **Current Essay** and **Selected Text** filter by the associated video. **Selected Text** also gives the agent the excerpt to interpret the question and guide its search. **All Knowledge** searches all embedded segments, including videos without essays. When the user changes scope, earlier turns help resolve references and the new scope controls retrieval.
+`answering.py` builds the agent using `CHAT_MODEL_ID`. The blog's `POST /api/ask` accepts a question, the context of the page it was sent from, and the completed turns. The `essay` context filters by that essay's video. The `all` context searches all embedded segments, including videos without essays. When a chat moves between pages, earlier turns help resolve references and the new page's context controls retrieval.
 
 `search(query)` embeds the query and selects up to 8 nearest embedded segments by cosine distance within the selected scope. It returns the segment text, video title, channel name, optional essay title and URL, and the video URL at that moment (`https://www.youtube.com/watch?v={video_id}&t={start}s`, with `start` rounded down to a whole second). The standalone chat on `7932` uses `agent.to_web()` and searches only videos with essays.
 
 The agent's instructions:
 
-- Answer only from what `search` returns. Search more than once, with different wording, when a question spans several topics or sources.
-- After each claim, link the moment in the video it came from and the essay when available.
+- Search before answering, more than once with different wording when a question spans several topics or sources, and build the answer on what `search` returns.
 - When the answer draws on several videos, say which part comes from which.
-- If nothing relevant comes back, say so. Do not answer from general knowledge.
+- Always answer. Where the transcripts do not cover the question, fill the gap from general knowledge and say which parts do not come from the transcripts.
+- Format in Markdown: bold the key terms and the sentences that carry the answer, italics for quotations, lists and headings only when the content needs them.
+- Write plainly for one reader, without greetings, run-ups, closing summaries or common AI phrasing.
+- The standalone chat links each claim from the transcripts to the essay and the moment in the video.
 
 Facts about `to_web()` that shape the design:
 

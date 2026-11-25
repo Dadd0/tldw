@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Submit · TL;DW{% endblock %}
+
+{% block content %}
+  <article>
+    <h1>Submit a video</h1>
+    {% if started %}
+      <p>Transcription started. The essay should appear on the <a href="/"><u>front page</u></a> in a few minutes.</p>
+    {% else %}
+      {% if error %}<p id="submit-error" role="alert">{{ error }}</p>{% endif %}
+      <form method="post" action="/submit">
+        <p>
+          <label for="video">YouTube URL or video ID</label><br>
+          <input id="video" name="video" type="text" size="30" value="{{ video | default('') }}"
+                 required spellcheck="false" autocapitalize="none"{% if error %} aria-describedby="submit-error"{% endif %}>
+        </p>
+        <button type="submit">submit</button>
+      </form>
+    {% endif %}
+  </article>
+{% endblock %}

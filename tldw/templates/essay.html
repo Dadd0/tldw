@@ -3,16 +3,20 @@
 {% block title %}{{ essay.title }} · TL;DW{% endblock %}
 
 {% block content %}
+  {% if toc %}
+  <nav class="toc" aria-label="Contents">
+    <ol>
+      {% for section in toc %}
+      <li><a href="#{{ section.id }}">{{ section.text }}</a></li>
+      {% endfor %}
+    </ol>
+  </nav>
+  {% endif %}
   <article data-video-id="{{ essay.video_id }}" data-essay-title="{{ essay.title }}">
     <header>
-      <h1 tabindex="-1">{{ essay.title }}</h1>
+      <h1>{{ essay.title }}</h1>
       {{ essay_details(essay, now) }}
     </header>
-    <div class="essay-chat-actions">
-      <button type="button" data-open-chat aria-controls="chat" hidden>Open chat</button>
-      <button type="button" data-ask-essay aria-controls="chat" hidden>Ask about this essay</button>
-      <button type="button" data-ask-selection aria-controls="chat" hidden>Ask about selected text</button>
-    </div>
     <div class="essay-body">
       {{ body_html | safe }}
     </div>
