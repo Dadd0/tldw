@@ -2481,6 +2481,21 @@
   border-inline-start: 1px solid var(--border-strong);
 }
 
+.reveal .result-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-body);
+  line-height: 1.3;
+}
+
+.reveal .result-points > li {
+  max-inline-size: none;
+  margin: 0;
+  padding-block: calc(var(--u) * 1.5);
+  border-block-start: 1px solid var(--border-strong);
+}
+
 .reveal .demo-steps {
   --num: calc(var(--u) * 5.5);
   font-size: var(--text-body);
