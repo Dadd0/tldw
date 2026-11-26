@@ -1680,12 +1680,12 @@
   white-space: nowrap;
 }
 
-.reveal :is(.bench-row, .eval-run).is-agent .bench-fill {
+.reveal .bench-row.is-agent .bench-fill {
   background: var(--accent-agent);
 }
 
 /* The orange alone is under 3:1 on the track, so the bar carries a rust outline. */
-.reveal :is(.bench-row, .eval-run).is-accent .bench-fill {
+.reveal .bench-row.is-accent .bench-fill {
   background: var(--accent-primary);
   box-shadow: inset 0 0 0 2px var(--accent-primary-ink);
 }
@@ -1699,7 +1699,7 @@
   color: var(--ink-secondary);
 }
 
-.reveal :is(.bench-row, .eval-run).is-muted .bench-fill {
+.reveal .bench-row.is-muted .bench-fill {
   background: var(--ink-tertiary);
 }
 
@@ -1898,18 +1898,14 @@
  * ink (is-accent) is a risk, an attack or a failure. A toned group hands its ink to the
  * labels and numerals inside it through --tone-ink.
  */
-.reveal :is(.eval-group, .demo-col, .eval-run).is-agent {
+.reveal :is(.eval-group, .demo-col, .eval-costs tr).is-agent {
   --tone-ink: var(--accent-agent-ink);
   --tone-rule: var(--accent-agent);
 }
 
-.reveal :is(.eval-group, .demo-col, .eval-run).is-accent {
+.reveal :is(.eval-group, .demo-col, .eval-costs tr).is-accent {
   --tone-ink: var(--accent-primary-ink);
   --tone-rule: var(--accent-primary-ink);
-}
-
-.reveal .eval-run.is-muted {
-  --tone-ink: var(--ink-secondary);
 }
 
 /* Small mono capitals over a column or at the head of a band. */
@@ -2190,16 +2186,52 @@
   color: var(--ink-primary);
 }
 
-/*
- * Evaluation suite (s07): open columns of numbered cases. The count runs through every
- * list inside eval-columns, so ten cases in three groups read 01 to 10.
- */
+/* One root splits into three groups of test cases on slide 7. */
+.reveal .eval-tree {
+  --branch-gap: calc(var(--u) * 4);
+  margin: 0;
+}
+
+.reveal .eval-tree figcaption {
+  width: fit-content;
+  margin: 0 auto;
+  padding: var(--u) calc(var(--u) * 2.5);
+  border: 1px solid var(--ink-primary);
+  font: 500 var(--text-lead) / 1.1 var(--font-display);
+}
+
 .reveal .eval-columns {
+  position: relative;
   display: grid;
-  grid-template-columns: var(--eval-cols, repeat(3, minmax(0, 1fr)));
-  align-items: start;
-  column-gap: calc(var(--u) * 5);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--branch-gap);
+  padding-top: var(--branch-gap);
   counter-reset: evalcase;
+}
+
+.reveal .eval-columns::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--branch-gap) / 2);
+  inset-inline: calc((100% - 2 * var(--branch-gap)) / 6);
+  border-top: 1px solid var(--border-strong);
+}
+
+.reveal .eval-group {
+  position: relative;
+}
+
+.reveal .eval-group::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  height: calc(var(--branch-gap) / 2);
+  border-left: 1px solid var(--border-strong);
+}
+
+.reveal .eval-group:nth-child(2)::before {
+  height: var(--branch-gap);
 }
 
 .reveal :is(.eval-group, .demo-col) {
@@ -2235,13 +2267,13 @@
 }
 
 .reveal .eval-cases {
-  font-size: var(--case-size, var(--text-micro));
+  font-size: var(--text-small);
   line-height: 1.25;
 }
 
 .reveal .eval-cases > li {
   padding-block: var(--row-pad, calc(var(--u) * 0.625));
-  font-weight: 600;
+  font-weight: 400;
   counter-increment: evalcase;
 }
 
@@ -2280,115 +2312,43 @@
   white-space: nowrap;
 }
 
-/*
- * Experiment log (s08): a column of metric names, then one column per run, left to right
- * on one ink track with a chevron at each step. Rows are shared through subgrid, so a
- * metric sits at the same height in every run. Cells carry the spacing, not the grid, so
- * the track and the row hairlines run unbroken.
- */
-.reveal .eval-runs {
-  --run-gap: calc(var(--u) * 4);
-  display: grid;
-  grid-template-columns: var(--eval-heads, max-content) repeat(var(--runs, 3), minmax(0, 1fr));
-  grid-template-rows: auto repeat(var(--metrics, 3), auto);
-  font-size: var(--text-micro);
-  line-height: 1.3;
+/* Slide 8 compares each configuration with its hourly cost. */
+.reveal .eval-costs {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
 }
 
-.reveal :is(.eval-heads, .eval-run, .eval-metrics) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: subgrid;
-}
-
-.reveal :is(.eval-heads, .eval-metrics) {
-  grid-row: 2 / -1;
-}
-
-.reveal .eval-heads {
-  grid-column: 1;
-}
-
-.reveal .eval-run {
-  position: relative;
-  grid-row: 1 / -1;
-  min-inline-size: 0;
-  border-block-start: var(--edge) solid var(--ink-primary);
-}
-
-/* A chevron on the track where one run hands over to the next. */
-.reveal .eval-run + .eval-run::before {
-  content: "";
-  position: absolute;
-  inset: calc(var(--edge) / -2) auto auto calc(var(--run-gap) / -2);
-  box-sizing: border-box;
-  inline-size: calc(var(--u) * 1.25);
-  block-size: calc(var(--u) * 1.25);
-  border-block-start: var(--edge) solid var(--ink-primary);
-  border-inline-end: var(--edge) solid var(--ink-primary);
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-
-.reveal :is(.eval-change, .eval-metric, .eval-heads > *) {
-  padding: calc(var(--u) * 1.25) var(--run-gap) calc(var(--u) * 1.25) 0;
-}
-
-.reveal :is(.eval-metric, .eval-heads > *) {
-  border-block-start: 1px solid var(--border-strong);
-}
-
-.reveal .eval-heads > * {
-  display: flex;
-  align-items: center;
+.reveal .eval-costs thead th {
+  padding: 0 0 calc(var(--u) * 1.5);
+  border-bottom: var(--edge) solid var(--ink-primary);
   color: var(--ink-secondary);
+  font: 500 var(--text-micro) / 1.25 var(--font-mono);
 }
 
-/* The run's name and the one thing it changed. */
-.reveal .eval-change {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3em;
-  min-inline-size: 0;
+.reveal .eval-costs tbody :is(th, td) {
+  padding: calc(var(--u) * 2.5) 0;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-strong);
 }
 
-.reveal .eval-change > p:not([class]) {
-  max-inline-size: none;
-  color: var(--ink-secondary);
+.reveal .eval-costs tbody th {
+  padding-right: calc(var(--u) * 5);
+  font-size: var(--text-small);
+  font-weight: 400;
 }
 
-/* A reading: the figure, the change since the last run, and a bar on its own line. */
-.reveal .eval-metric {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: calc(var(--u) * 0.75) calc(var(--u) * 1.5);
-  min-inline-size: 0;
+.reveal .eval-costs .model-icons {
+  margin-bottom: var(--u);
 }
 
-.reveal .eval-metric > .bench-bar {
-  flex: 0 0 100%;
-  block-size: calc(var(--u) * 1.25);
+.reveal .eval-costs tr > :last-child {
+  text-align: right;
+  white-space: nowrap;
 }
 
-.reveal .eval-delta {
-  color: var(--ink-secondary);
-  font: 500 var(--text-micro) / 1.2 var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.reveal .eval-delta.is-agent {
-  color: var(--accent-agent-ink);
-}
-
-.reveal .eval-delta.is-accent {
-  color: var(--accent-primary-ink);
-}
-
-/* A tick across a bar at --at: the target the bar has to reach. */
-.reveal .bench-target {
-  position: absolute;
-  inset: calc(var(--u) * -0.5) auto calc(var(--u) * -0.5) var(--at, 90%);
-  border-inline-start: 2px solid var(--ink-primary);
+.reveal .eval-costs td.eval-figure {
+  font-size: var(--text-h2);
 }
 
 /*
@@ -2582,13 +2542,12 @@
   box-shadow: inset 0 0 0 2px var(--accent-primary-ink);
 }
 
-/* A group's head: its count as a large numeral, an icon and the group's name. */
-.reveal .eval-head-stat {
+.reveal h3.eval-head-stat {
   display: flex;
   align-items: baseline;
-  gap: calc(var(--u) * 1.25);
+  gap: var(--u);
   color: var(--tone-ink, var(--ink-primary));
-  font-size: var(--text-micro);
+  font: 500 var(--text-lead) / 1.15 var(--font-display);
 }
 
 .reveal .eval-big-num {
@@ -2855,15 +2814,15 @@ html.reveal-print .reveal .code-card pre {
     margin-block-start: 12pt;
   }
 
-  html:not(.print-pdf) .reveal :is(.card-grid, .metric-grid, .flow-strip, .transform-pair, .split-row, .arch-lane, .agent-loop, .footprint-strip, .editorial-step, .strip-band, .eval-target, .shift-head, .shift-row, .gate-strip, .tool-strip, .eval-columns, .eval-runs, .eval-heads, .eval-run, .eval-metrics, .risk-head, .risk-row, .demo-split) {
+  html:not(.print-pdf) .reveal :is(.card-grid, .metric-grid, .flow-strip, .transform-pair, .split-row, .arch-lane, .agent-loop, .footprint-strip, .editorial-step, .strip-band, .eval-target, .shift-head, .shift-row, .gate-strip, .tool-strip, .eval-columns, .risk-head, .risk-row, .demo-split) {
     display: grid;
   }
 
-  html:not(.print-pdf) .reveal :is(.hn-bar, .tag-row, .segment-track, .slide-footer, .transform-link, .arch-flow, .arch-bus, .arch-node, .arch-legend, .bench-list, .editorial-flow, .editorial-copy, .editorial-tags, .shift-strip, .ladder, .eval-group, .eval-cases, .eval-goal, .eval-change, .eval-metric, .risk-table, .demo-col, .demo-steps, .eval-mix-bar, .eval-head-stat, .model-icons) {
+  html:not(.print-pdf) .reveal :is(.hn-bar, .tag-row, .segment-track, .slide-footer, .transform-link, .arch-flow, .arch-bus, .arch-node, .arch-legend, .bench-list, .editorial-flow, .editorial-copy, .editorial-tags, .shift-strip, .ladder, .eval-group, .eval-cases, .eval-goal, .risk-table, .demo-col, .demo-steps, .eval-mix-bar, .eval-head-stat, .model-icons) {
     display: flex;
   }
 
-  html:not(.print-pdf) .reveal :is(.agent-loop, .ladder, .eval-run, .shift-after) {
+  html:not(.print-pdf) .reveal :is(.agent-loop, .ladder, .shift-after) {
     position: relative;
   }
 
@@ -2888,7 +2847,7 @@ html.reveal-print .reveal .code-card pre {
     white-space: pre-wrap;
   }
 
-  html:not(.print-pdf) .reveal :is(.card, .metric-card, .callout-box, .code-card, .visual-frame, .diagram-box, .hn-mockup, .compare-table, .transcript-card, .essay-card, .arch-diagram, .agent-loop, .bench-list, .footprint-strip, .shift-strip, .ladder, .strip-band, .eval-group, .eval-target, .eval-runs, .risk-row, .demo-col) {
+  html:not(.print-pdf) .reveal :is(.card, .metric-card, .callout-box, .code-card, .visual-frame, .diagram-box, .hn-mockup, .compare-table, .transcript-card, .essay-card, .arch-diagram, .agent-loop, .bench-list, .footprint-strip, .shift-strip, .ladder, .strip-band, .eval-group, .eval-target, .eval-costs, .risk-row, .demo-col) {
     break-inside: avoid;
     box-shadow: none;
   }

@@ -351,56 +351,43 @@
     <section id="s07-eval-cases">
       <div class="slide" style="--slide-pad-inline: 48px; --slide-pad-block: 38px; --text-h2: 49px; gap: 18px">
         <header class="slide-header">
-          <h2 style="max-inline-size: none">Eval (1/2): ten cases, one target score</h2>
+          <h2 style="max-inline-size: none">Eval (1/2): how we tested TL;DW</h2>
         </header>
         <div class="slide-body">
-          <div class="eval-mix-bar" role="img" aria-label="5 typical, 3 edge, 2 attack cases"><span></span><span></span><span></span></div>
-          <div class="eval-columns" style="--eval-cols: 5fr 4fr 4fr; --text-h2: 76px; --case-size: var(--text-small); --row-pad: 7px">
-            <article class="eval-group is-agent fragment" data-fragment-index="0">
-              <header class="eval-head-stat">
-                <span class="eval-big-num">5</span><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m7.5 12 3 3 6-6"></path></svg><h3 class="col-label">Typical</h3>
-              </header>
-              <ol class="eval-cases" start="1">
-                <li>Short talk, thesis first</li>
-                <li>Interview, two speakers</li>
-                <li>Long talk, short essay</li>
-                <li>Ask about one essay</li>
-                <li>Ask across the library</li>
-              </ol>
-            </article>
-            <article class="eval-group fragment" data-fragment-index="1">
-              <header class="eval-head-stat">
-                <span class="eval-big-num">3</span><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 13h5l3-8 4 14 3-7h5"></path></svg><h3 class="col-label">Edge</h3>
-              </header>
-              <ol class="eval-cases" start="6">
-                <li>Overlapping Italian speech</li>
-                <li>Clip under three minutes</li>
-                <li>Question outside the library</li>
-              </ol>
-            </article>
-            <article class="eval-group is-accent fragment" data-fragment-index="2">
-              <header class="eval-head-stat">
-                <span class="eval-big-num">2</span><svg class="mini-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v5c0 5-4 8-8 10-4-2-8-5-8-10V6zM12 7v6m0 3v.1"></path></svg><h3 class="col-label">Attack</h3>
-              </header>
-              <ol class="eval-cases" start="9">
-                <li>Spoken prompt injection</li>
-                <li>Raw HTML or malformed link</li>
-              </ol>
-            </article>
-          </div>
-          <div class="fragment" data-fragment-index="3">
-            <div class="eval-target" style="--text-lead: 38px">
-              <p class="col-label text-accent">Target</p>
-              <p class="eval-goal"><span class="eval-figure">90%+</span> pass rate</p>
-              <p class="eval-goal"><span class="eval-figure">2.0</span> avg turns, at most</p>
-              <p class="eval-goal"><span class="eval-figure">$0.20</span> per hour of video, under</p>
+          <figure class="eval-tree" aria-labelledby="eval-tree-title">
+            <figcaption id="eval-tree-title">10 test cases</figcaption>
+            <div class="eval-columns">
+              <article class="eval-group is-agent">
+                <h3 class="eval-head-stat"><span class="eval-big-num">5</span> Routine checks</h3>
+                <ol class="eval-cases">
+                  <li>Lead a short essay with its thesis</li>
+                  <li>Keep two speakers’ views distinct</li>
+                  <li>Condense an hour-long talk</li>
+                  <li>Answer from one essay’s video</li>
+                  <li>Answer across several videos</li>
+                </ol>
+              </article>
+              <article class="eval-group">
+                <h3 class="eval-head-stat"><span class="eval-big-num">3</span> Tricky inputs</h3>
+                <ol class="eval-cases fragment" data-fragment-index="0" start="6">
+                  <li>Overlapping speech in Italian</li>
+                  <li>A clip under three minutes</li>
+                  <li>A question the library can’t answer</li>
+                </ol>
+              </article>
+              <article class="eval-group is-accent">
+                <h3 class="eval-head-stat"><span class="eval-big-num">2</span> Deliberate attacks</h3>
+                <ol class="eval-cases fragment" data-fragment-index="1" start="9">
+                  <li>An instruction hidden in speech</li>
+                  <li>Raw HTML or a malformed link</li>
+                </ol>
+              </article>
             </div>
-            <p class="text-muted" style="font-size: var(--text-micro); max-inline-size: none; margin-top: 8px">A case passes only if every check holds. Turns: questions asked before a usable answer.</p>
-          </div>
+          </figure>
         </div>
       </div>
       <aside class="notes">
-        <p>We picked ten cases that cover what TL;DW does every day and the ways it can go wrong. Five are typical: a short talk, an interview, a long talk that must stay under the word cap, and two kinds of question. Three are edges we hit for real: overlapping Italian speech, a Short that should cost nothing, and a question the library can't answer, where the chat must still help and say what comes from general knowledge. Two are attacks: an instruction spoken inside a talk, and raw HTML or a broken link. The target is nine of ten passing, two questions or fewer per usable answer, and under 20 cents per hour of video.</p>
+        <p>We started with five tasks a reader expects to work on an ordinary day. Then we tried three inputs that could trip up the system even when nobody was trying to fool it. For example, the closest search result might still leave a question unanswered. Finally, we deliberately supplied hostile input. One case tests whether an instruction spoken in a video can steer the model. The other checks how the site handles raw HTML and malformed links.</p>
         <ol>
           <li>Short tech talk: essay states its thesis first and never mentions the video.</li>
           <li>Interview, two speakers: questions and answers kept apart.</li>
@@ -422,62 +409,49 @@
           <h2 style="max-inline-size: none">Eval (2/2): measure, change one thing, measure again</h2>
         </header>
         <div class="slide-body">
-          <div class="eval-runs">
-            <div class="eval-heads"><span>Success rate</span><span>Avg turns</span><span>Cost per hour of video</span></div>
-            <div class="eval-run is-muted">
-              <div class="eval-change">
-                <p class="model-icons">
-                  <img class="logo-icon" src="assets/logos/googlegemini.svg" alt="Gemini">
-                  <img class="logo-icon" src="assets/logos/openrouter.svg" alt="OpenRouter">
-                  <span class="col-label">Baseline</span>
-                </p>
-                <p>Gemini 3.5 Transcribe, language auto-detected, chat free to skip search</p>
-              </div>
-              <div class="eval-metrics">
-                <div class="eval-metric"><span class="eval-figure">70%</span><span class="bench-bar"><span class="bench-fill" style="--value: 70%"></span><span class="bench-target" style="--at: 90%" aria-hidden="true"></span></span></div>
-                <div class="eval-metric"><span class="eval-figure">2.4</span></div>
-                <div class="eval-metric"><span class="eval-figure">$0.27</span></div>
-              </div>
-            </div>
-            <div class="eval-run is-agent fragment" data-fragment-index="0">
-              <div class="eval-change">
-                <p class="model-icons">
-                  <img class="logo-icon" src="assets/logos/grok.svg" alt="Grok">
-                  <img class="logo-icon" src="assets/logos/xai.svg" alt="xAI">
-                  <span class="col-label">Change 1</span>
-                </p>
-                <p>Grok STT 2.0, 5-minute chunks, language hints</p>
-              </div>
-              <div class="eval-metrics">
-                <div class="eval-metric"><span class="eval-figure">80%</span><span class="eval-delta is-agent">+10 pts</span><span class="bench-bar"><span class="bench-fill" style="--value: 80%"></span><span class="bench-target" style="--at: 90%" aria-hidden="true"></span></span></div>
-                <div class="eval-metric"><span class="eval-figure">2.1</span></div>
-                <div class="eval-metric"><span class="eval-figure">$0.10</span></div>
-              </div>
-            </div>
-            <div class="eval-run is-accent fragment" data-fragment-index="1">
-              <div class="eval-change">
-                <p class="model-icons">
-                  <img class="logo-icon" src="assets/logos/deepseek.svg" alt="DeepSeek V4.1 Flash">
-                  <img class="logo-icon" src="assets/logos/pydantic.svg" alt="PydanticAI">
-                  <img class="logo-icon" src="assets/logos/voyage.svg" alt="Voyage AI">
-                  <img class="logo-icon" src="assets/logos/openrouter.svg" alt="OpenRouter">
-                  <span class="col-label">Change 2</span>
-                </p>
-                <p>DeepSeek V4.1 Flash for essays and chat, first search forced, untrusted-data framing, HTML escaped</p>
-              </div>
-              <div class="eval-metrics">
-                <div class="eval-metric"><span class="eval-figure">100%</span><span class="eval-delta is-agent">+20 pts</span><span class="bench-bar"><span class="bench-fill" style="--value: 100%; box-shadow: inset 0 0 0 2px var(--accent-primary-ink)"></span><span class="bench-target" style="--at: 90%" aria-hidden="true"></span></span></div>
-                <div class="eval-metric"><span class="eval-figure">1.3</span></div>
-                <div class="eval-metric"><span class="eval-figure">$0.10</span></div>
-              </div>
-            </div>
-          </div>
+          <table class="eval-costs">
+            <thead>
+              <tr><th scope="col">Configuration</th><th scope="col">Cost per hour of video</th></tr>
+            </thead>
+            <tbody>
+              <tr class="is-muted">
+                <th scope="row">
+                  <p class="model-icons">
+                    <img class="logo-icon" src="assets/logos/googlegemini.svg" alt="Gemini">
+                    <img class="logo-icon" src="assets/logos/nvidia.svg" alt="NVIDIA">
+                    <span class="col-label">Baseline</span>
+                  </p>
+                  <p>Gemini 3.5 Transcribe detected the language. Nemotron wrote essays and could answer chat questions without searching.</p>
+                </th>
+                <td class="eval-figure">$0.27</td>
+              </tr>
+              <tr class="is-agent fragment" data-fragment-index="0">
+                <th scope="row">
+                  <p class="model-icons">
+                    <img class="logo-icon" src="assets/logos/grok.svg" alt="Grok">
+                    <img class="logo-icon" src="assets/logos/nvidia.svg" alt="NVIDIA">
+                    <span class="col-label">Change 1</span>
+                  </p>
+                  <p>Grok STT 2.0 transcribed five-minute chunks with language hints. Nemotron handled essays and chat.</p>
+                </th>
+                <td class="eval-figure">$0.10</td>
+              </tr>
+              <tr class="is-accent fragment" data-fragment-index="1">
+                <th scope="row">
+                  <p class="model-icons">
+                    <img class="logo-icon" src="assets/logos/grok.svg" alt="Grok">
+                    <img class="logo-icon" src="assets/logos/deepseek.svg" alt="DeepSeek V4.1 Flash">
+                    <span class="col-label">Change 2</span>
+                  </p>
+                  <p>DeepSeek V4.1 Flash for essays and chat, first search forced, untrusted-data framing, HTML escaped</p>
+                </th>
+                <td class="eval-figure">$0.10</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <footer class="slide-footer" style="padding-top: 12px; border-top: 1px solid var(--border-strong)">
-          <p style="max-inline-size: none">Measured on the ten-case suite via OpenRouter, November 2026. Turns count questions asked before a usable answer; chat queries cost under $0.002 each.</p>
-        </footer>
       </div>
-      <aside class="notes">Each change answers a failure we saw. In the baseline, Gemini labelled speakers on every word in one call and on a quarter of them in an identical repeat, so the interview case fails. Switching to Grok STT 2.0 fixed the speakers and cut cost from 27 to 10 cents an hour. The language hint matters too: without it, one Italian conversation drifted into Hebrew script. Change 2 moves essay generation and chat to DeepSeek V4.1 Flash and hardens the chat loop. Forcing the first search grounds the first answer, so fewer follow-ups are needed. Transcripts and search results are framed as source material, and the renderer escapes raw HTML, which it otherwise passes through untouched. A question costs well under a tenth of a cent.</aside>
+      <aside class="notes">Each change answers a failure we saw. In the baseline, Gemini labelled speakers on every word in one call and on a quarter of them in an identical repeat, so the interview case fails. Switching to Grok STT 2.0 fixed the speakers and cut cost from 27 to 10 cents an hour. The language hint matters too: without it, one Italian conversation drifted into Hebrew script. Change 2 moves essay generation and chat to DeepSeek V4.1 Flash and hardens the chat loop. Forcing the first search grounds the first answer, so fewer follow-ups are needed. Transcripts and search results are framed as source material, and the renderer escapes raw HTML, which it otherwise passes through untouched.</aside>
     </section>
 
     <section id="s09-risks">
